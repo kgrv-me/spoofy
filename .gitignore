@@ -1,0 +1,12 @@
+# Directories
+build/
+dist/
+venv/
+
+# Files
+**/__pycache__
+**/.DS_Store
+**.bak
+**.conf
+*.spec
+*.zip

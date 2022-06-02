@@ -8,8 +8,8 @@ def check_dependencies():
     """
     if (os.name == 'nt' and not os.path.exists('C:\\Windows\\SysWOW64\\Npcap')):
         print()
-        print("(e2) 'Npcap' is required to run on 'Windows'!")
-        print("Download via 'https://nmap.org/npcap/#download'")
+        print(f"{'':2}(e2) 'Npcap' is required to run on 'Windows'!")
+        print(f"{'':2}Download via 'https://nmap.org/npcap/#download'")
         print()
         exit(2)
 
@@ -25,9 +25,9 @@ def check_privilege():
 
     if (not privileged):
         print()
-        print("(e13) Need higher privilege to run!")
-        print("Please 'Run as administrator' on 'Windows'")
-        print(f"{' ':3} or 'sudo' on 'macOS' and 'Linux'")
+        print(f"{'':2}(e13) Need higher privilege to run!")
+        print(f"{'':2}Please 'Run as administrator' on 'Windows'")
+        print(f"{'':6}or 'sudo' on 'macOS' and 'Linux'")
         print()
         exit(13)
 
@@ -42,7 +42,8 @@ def exit(code):
     """
     Exit with given code and prevent auto-close when launching standalone.
     """
-    input("Press 'Enter' to continue...")
+    if (code != 0):
+        input("Press 'Enter' to continue...")
     os._exit(code)
 
 def threaded(fn):

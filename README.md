@@ -1,4 +1,4 @@
-A cross-platform CLI Python package for spoofing! (*Created for Ghost of Tsushima: Legends*)
+A cross-platform CLI Python package for spoofing! *Inspired by [`elmoCut`](https://github.com/elmoiv/elmocut)*
 
 [REQUIREMENT](#requirement) - [OS/ARCH](#osarch) - [USAGE](#usage) ( [Run as Python Module](#run-as-python-module) | [Run as Standalone](#run-as-standalone) | [CLI](#cli) ) - [CHANGELOG](#changelog)
 
@@ -8,8 +8,8 @@ A cross-platform CLI Python package for spoofing! (*Created for Ghost of Tsushim
 - `Python3` (Download https://www.python.org/downloads/)
 
 ### Super User Privilege (Administrator Right)
-- `sudo` on `macOS` and `Linux`
 - `Run as administrator` on `Windows`
+- `sudo` on `macOS` and `Linux`
 
 ### Windows
 - `Npcap` (Download https://nmap.org/npcap/#download)
@@ -19,10 +19,10 @@ A cross-platform CLI Python package for spoofing! (*Created for Ghost of Tsushim
 *Standalone Executable*
 | OS/ARCH          | Description |
 | :--------------: | ----------- |
-| `Linux/x86_64`   | 64-bit x86 architecture for Linux operating systems |
-| `macOS/ARM64`    | 64-bit ARM architecture for macOS operating systems |
-| `macOS/x86_64`   | 64-bit x86 architecture for macOS operating systems |
-| `Windows/x86_64` | 64-bit x86 architecture for Windows operating systems |
+| `Linux/x86_64`   | 64-bit `x86` architecture for `Linux` operating systems |
+| `macOS/ARM64`    | 64-bit `ARM` architecture for `macOS` operating systems |
+| `macOS/x86_64`   | 64-bit `x86` architecture for `macOS` operating systems |
+| `Windows/x86_64` | 64-bit `x86` architecture for `Windows` operating systems |
 
 
 ## USAGE
@@ -35,7 +35,7 @@ Install dependencies
 ```
 pip3 install --requirement requirements.txt
 ```
-or utilize built-in virtual environment for isolation
+or utilize built-in virtual environment before installing
 ```
 python3 -m venv DIR
 source DIR/bin/activate
@@ -69,9 +69,9 @@ sudo ./Spoofy-macOS-ARM64
 ```
 ~ ./Spoofy-macOS-ARM64
 
-(e13) Need higher privilege to run!
-Please 'Run as administrator' on 'Windows'
-    or 'sudo' on 'macOS' and 'Linux'
+  (e13) Need higher privilege to run!
+  Please 'Run as administrator' on 'Windows'
+      or 'sudo' on 'macOS' and 'Linux'
 
 Press 'Enter' to continue...
 ```
@@ -82,22 +82,23 @@ It will scan network for local hosts automatically
 Welcome to 'Spoofy'!
 Scanning network for hosts...
 
-0) 192.168.1.1  |  aa:bb:cc:dd:ee:ff  |  Intel
-1) 192.168.1.2  |  ff:ee:dd:cc:bb:aa  |  Apple
-2) 192.168.1.3  |  11:22:33:44:55:66  |  CloudNet (PS)
-s) Settings (NETWORK_SCAN, RESET_SETTINGS, SAFE_MODE, WAIT_DURATION)
+  0) 192.168.1.1  |  aa:bb:cc:dd:ee:ff  |  Intel
+  1) 192.168.1.2  |  ff:ee:dd:cc:bb:aa  |  Apple
+  2) 192.168.1.3  |  11:22:33:44:55:66  |  CloudNet (PS)
 
-Select device to temporary disconnect (q to quit): _
+  l) GNU GPLv3 License
+  s) Settings Configuration
+
+Select device to disconnect (q to quit): _
 ```
 
 #### Settings
 Enter `s` as input for configurable settings
 ```
-n) Network scan for local hosts
-r) Reset settings configuration
-s) Toggle 'SAFE_MODE' for spoofing (Current: False)
-w) Set 'WAIT_DURATION' between KILL and UN-KILL (Current: 16)
-   Set 'WAIT_DURATION' to 0 to disable auto UN-KILL
+  n) Network scan for local hosts
+  r) Reset settings configuration
+  s) Toggle 'SAFE_MODE' for spoofing (Current: True)
+  w) Set 'WAIT_DURATION' to enable auto-revive (Current: 0)
 
 Select setting to configure (b to go back): _
 ```
@@ -108,65 +109,124 @@ Select setting to configure (b to go back): _
   - settings.conf
   - Spoofy-macOS-ARM64
 ```
+
+#### Safe Mode
 `Spoofy` will **NOT** send network packets in `SAFE_MODE`
 ```
-'SAFE_MODE' is now 'True'
+  'SAFE_MODE' is now 'True'
 
-0) 192.168.1.1  |  aa:bb:cc:dd:ee:ff  |  Intel
-1) 192.168.1.2  |  ff:ee:dd:cc:bb:aa  |  Apple
-2) 192.168.1.3  |  11:22:33:44:55:66  |  CloudNet (PS)
-s) Settings (NETWORK_SCAN, RESET_SETTINGS, SAFE_MODE, WAIT_DURATION)
+  0) 192.168.1.1  |  aa:bb:cc:dd:ee:ff  |  Intel
+  1) 192.168.1.2  |  ff:ee:dd:cc:bb:aa  |  Apple
+  2) 192.168.1.3  |  11:22:33:44:55:66  |  CloudNet (PS)
 
-~ SAFE_MODE: ON ~
-Select device to temporary disconnect (q to quit): _
+  l) GNU GPLv3 License
+  s) Settings Configuration
+
+Select device to disconnect (q to quit): ~ SAFE_MODE ~ _
+```
+
+#### Spoofing (Default)
+Once selected, `Spoofy` will poison ARP cache until stopped
+
+*Press 'Enter' to toggle between KILL and REVIVE*
+```
+Select device to disconnect (q to quit): 2
+  '11:22:33:44:55:66 - CloudNet' is killed
+
+Press 'Enter' to revive 'CloudNet' (b to go back): 
+  '11:22:33:44:55:66 - CloudNet' is revived
+
+Press 'Enter' to spoofy 'CloudNet' (b to go back): _
 ```
 
 #### Spoofing (Automatically)
-Once selected, `Spoofy` will poison ARP cache for 'WAIT_DURATION' (Default: 16s)
+or auto-revive by setting 'WAIT_DURATION'
 ```
-~ SAFE_MODE: ON ~
+  n) Network scan for local hosts
+  r) Reset settings configuration
+  s) Toggle 'SAFE_MODE' for spoofing (Current: True)
+  w) Set 'WAIT_DURATION' to enable auto-revive (Current: 0)
+
+Select setting to configure (b to go back): w
+Enter duration (in seconds): 16
+  'WAIT_DURATION' is now '16.0'
+```
+*Pressing 'Enter' will spoof the same target again!*
+```
 Select device to temporary disconnect (q to quit): 2
-'11:22:33:44:55:66 - CloudNet' is killed
-'11:22:33:44:55:66 - CloudNet' is un-killed
+  '11:22:33:44:55:66 - CloudNet' is killed
+  '11:22:33:44:55:66 - CloudNet' is revived
 
 Press 'Enter' to spoof 'CloudNet' again (b to go back): _
 ```
-*Pressing 'Enter' will spoof the same target again!*
 
-#### Spoofing (Manually)
-or manual toggle by setting 'WAIT_DURATION' to 0
+#### Interruption
+`Spoofy` resets killed hosts before termination
 ```
-n) Network scan for local hosts
-r) Reset settings configuration
-s) Toggle 'SAFE_MODE' for spoofing (Current: True)
-w) Set 'WAIT_DURATION' between KILL and UN-KILL (Current: 16)
-   Set 'WAIT_DURATION' to 0 to disable auto UN-KILL
-
-~ SAFE_MODE: ON ~
-Select setting to configure (b to go back): w
-Enter duration (in seconds): 0
-'WAIT_DURATION' is now '0.0'
+Press 'Enter' to revive 'CloudNet' (b to go back): q
+Resetting spoofed hosts...
+  '11:22:33:44:55:66 - CloudNet' is revived
 ```
-Press 'Enter' to toggle between KILL and UN-KILL
+`CTRL-C`
 ```
-~ SAFE_MODE: ON ~
-Select device to temporary disconnect (q to quit): 2
-'11:22:33:44:55:66 - CloudNet' is killed
+Press 'Enter' to revive 'CloudNet' (b to go back): ^C
 
-Press 'Enter' to un-kill 'CloudNet' (b to go back): 
-'11:22:33:44:55:66 - CloudNet' is un-killed
-
-Press 'Enter' to kill 'CloudNet' (b to go back): _
+Terminating due to SIGNAL:2
+Initiate cleanup process... DO NOT interrupt!
+Resetting spoofed hosts...
+  '11:22:33:44:55:66 - CloudNet' is revived
 ```
+`CTRL-D`
+```
+Press 'Enter' to revive 'CloudNet' (b to go back): ^D
 
+Initiate cleanup process... DO NOT interrupt!
+Resetting spoofed hosts...
+  '11:22:33:44:55:66 - CloudNet' is revived
+```
+`CTRL-Z`
+```
+Press 'Enter' to revive 'CloudNet' (b to go back): ^Z
+
+Terminating due to SIGNAL:18
+Initiate cleanup process... DO NOT interrupt!
+Resetting spoofed hosts...
+  '11:22:33:44:55:66 - CloudNet' is revived
+```
 
 ## CHANGELOG
+### 2022-06-02
+#### v0.4-rc
+```
+Added
+- adaptive spacing for hosts IP addresses list
+- debug mode
+- license menu
+- non-blocking exit if code '0'
+- signal handling for graceful termination
+- sorting hosts by IP in 'Network.get_hosts()' for consistent listing
+
+Changed
+- default spoofing mode to manual
+- 'Network.unkill()' to 'Network.revive()'
+- 'Network.kill()', 'Network.revive()', 'Network.spoof()' argument to support sorted hosts
+- 'SAFE_MODE' indicator to be inline input prompt
+
+Improved
+- input command formatting for more flexibility
+- persistent settings with backup location and better check for stability
+
+Updated
+- display messages formats for better UI, UX
+- 'Settings' commands
+```
+
 ### 2022-06-01
-#### v0.3-RC
+#### v0.3-rc
 ```
 Added
 - manual toggle mode by setting 'WAIT_DURATION' to 0
-- persistent settings saving to 'settings.conf'
+- persistent settings with 'settings.conf'
 - settings configuration reset
 
 Changed
@@ -176,7 +236,7 @@ Changed
 Improved
 - cleanup coverage to ensure proper ARP cache reset before termination
 - exceptions handling for better stability and UX
-- UI, UX elements in CLI
+- UI, UX elements in 'ui.CLI'
 
 Updated
 - 'build.sh' to support both local and GitHub Actions runner
@@ -186,7 +246,7 @@ Updated
 ```
 
 ### 2022-05-31
-#### v0.2.4-ALPHA
+#### v0.2.4-alpha
 ```
 Added
 - 'patch.sh' to address '__file__' conflict with 'pyoxidizer'
@@ -209,7 +269,7 @@ Updated
 ```
 
 ### 2022-05-30
-#### v0.2.3-ALPHA
+#### v0.2.3-alpha
 ```
 Added
 - 'build.sh' script
@@ -220,7 +280,7 @@ Removed
 ```
 
 ### 2022-05-29
-#### v0.2.2-ALPHA
+#### v0.2.2-alpha
 ```
 Fixed
 - 'pyinstaller' standalone compiling
@@ -230,7 +290,7 @@ Updated
 ```
 
 ### 2022-05-21
-#### v0.2.1-ALPHA
+#### v0.2.1-alpha
 ```
 Added
 - 'pyinstaller' for standalone
@@ -240,7 +300,7 @@ Fixed
 ```
 
 ### 2022-05-20
-#### v0.2-ALPHA
+#### v0.2-alpha
 ```
 Added
 - Configurable settings
@@ -252,7 +312,7 @@ Updated
 ```
 
 ### 2022-05-19
-#### v0.1-ALPHA
+#### v0.1-alpha
 ```
 Added
 - 'ipaddress', 'manuf', 'psutil', 'scapy' packages
