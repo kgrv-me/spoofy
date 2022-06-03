@@ -1,13 +1,12 @@
 from pathlib import PurePath
 from sysconfig import get_path
-
 import json
 
 class Settings():
     """
-    Settings (configuration) for program.
+    Settings configuration for program.
     """
-    __conf_file = str(PurePath(get_path('data'), 'settings.conf'))
+    __conf_file = str(PurePath(get_path('data'), 'settings.json'))
     __conf_file_bak = None
     __get = {
         'DEBUG': False,
@@ -17,6 +16,7 @@ class Settings():
     }
     __minimum_delay = 0.3
 
+    #: Dictionary of valid commands lists
     commands = {
         'back': ['b', 'back', 'B', 'BACK', 'o', 'out', 'O', 'OUT'],
         'quit': ['e', 'exit', 'E', 'EXIT', 'q', 'quit', 'Q', 'QUIT'],
@@ -25,12 +25,16 @@ class Settings():
         'kill': ['k', 'kill', 'K', 'KILL'],
         'revive': ['r', 'revive', 'R', 'REVIVE', 'u', 'unkill', 'un-kill', 'U', 'UNKILL', 'UN-KILL']
     }
+    #: Dictionary data structure
     get = {}
 
     @classmethod
     def __load_settings(cls, path):
         """
         Load settings from file if exists.
+
+        Parameter:
+            path -- (string) target path
         """
         with open(path, 'r') as cfg:
             cls.get = json.loads(cfg.read())
@@ -41,6 +45,9 @@ class Settings():
     def __save_settings(cls, path):
         """
         Save settings to file.
+
+        Parameter:
+            path -- (string) target path
         """
         with open(path, 'w') as cfg:
             cfg.write(json.dumps(cls.get))
@@ -54,7 +61,7 @@ class Settings():
 
         # Configure backup path for persistent settings
         loader_resource = __loader__.get_resource_reader(__name__)
-        cls.__conf_file_bak = None if not loader_resource else str(PurePath(__loader__.get_resource_reader(__name__).path, 'settings.conf'))
+        cls.__conf_file_bak = None if not loader_resource else str(PurePath(__loader__.get_resource_reader(__name__).path, 'settings.json'))
 
         try:
             cls.__load_settings(cls.__conf_file)
@@ -97,6 +104,9 @@ class Settings():
     def set_delay(cls, seconds):
         """
         Set 'DELAY' in float seconds.
+
+        Parameter:
+            seconds -- (float, string) amount of seconds
         """
         if (not seconds.replace('.', '').isdecimal()):
             print(f"{'':2}Invalid 'SECONDS' for 'DELAY'!")
@@ -104,12 +114,16 @@ class Settings():
             print(f"{'':2}'DELAY' needs to be greater than '0.3' seconds!")
         else:
             cls.get['DELAY'] = float(seconds)
+            print(f"{'':2}'DELAY' is now '{cls.get['DELAY']}'")
             cls.save_settings()
 
     @classmethod
     def set_wait_duration(cls, seconds):
         """
         Set 'WAIT_DURATION' in float seconds.
+
+        Parameter:
+            seconds -- (float) amount of seconds
         """
         cls.get['WAIT_DURATION'] = seconds
         print(f"{'':2}'WAIT_DURATION' is now '{cls.get['WAIT_DURATION']}'")

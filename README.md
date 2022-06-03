@@ -1,13 +1,18 @@
 A cross-platform CLI Python package for spoofing! *Inspired by [`elmoCut`](https://github.com/elmoiv/elmocut)*
 
-[REQUIREMENT](#requirement) - [OS/ARCH](#osarch) - [USAGE](#usage) ( [Run as Python Module](#run-as-python-module) | [Run as Standalone](#run-as-standalone) | [CLI](#cli) ) - [CHANGELOG](#changelog)
+[REQUIREMENT](#requirement) - [OS/ARCH](#osarch) - [USAGE](#usage) ( [Run as Standalone](#run-as-standalone) | [Run as Python Module](#run-as-python-module) | [CLI](#cli) ) - [CHANGELOG](#changelog)
 
 
 ## REQUIREMENT
+### Host Network
+- `Spoofy` needs host network access to work correctly
+- Ensure compatible network settings in VMs before using
+  - `Parallels`, `VirtualBox`, `VMware`
+
 ### Python Module (Not Required for Standalone)
 - `Python3` (Download https://www.python.org/downloads/)
 
-### Super User Privilege (Administrator Right)
+### Super User Privilege (Administrative Rights)
 - `Run as administrator` on `Windows`
 - `sudo` on `macOS` and `Linux`
 
@@ -26,29 +31,12 @@ A cross-platform CLI Python package for spoofing! *Inspired by [`elmoCut`](https
 
 
 ## USAGE
-### Run as Python Module
-Clone `git` repository
-```
-git clone https://github.com/kgrv-me/spoofy.git
-```
-Install dependencies
-```
-pip3 install --requirement requirements.txt
-```
-or utilize built-in virtual environment before installing
-```
-python3 -m venv DIR
-source DIR/bin/activate
-```
-Run as Python module inside the repository
-```
-python3 -m spoofy
-```
-
 ### Run as Standalone
 **NOTE:** Ensure to only download from trusted sources!
 
 There is `run.sh` for `macOS` and `Linux` to help run `sudo`
+
+- It can be launched via double clicks as well (Open with `Terminal.app` on `macOS`)
 
 *Right click and 'Run as administrator' on executable for `Windows`*
 ```
@@ -58,11 +46,54 @@ There is `run.sh` for `macOS` and `Linux` to help run `sudo`
   - run.sh
   - Spoofy-macOS-ARM64
 ```
+
 or run the executable via terminal
 ```
 sudo ./Spoofy-macOS-ARM64
 ```
 
+#### Cannot be opened on macOS
+Executable needs to be allowed through `Gatekeeper` on `macOS` first with
+```
+- Hold 'CTRL'
+- 'Right-Click' on 'Spoofy-macOS-ARM64'
+- Select 'Open' from context menu
+- Click 'Open' again on prompt
+```
+
+or through system preferences
+```
+- Open 'System Preferences'
+- Select 'Security & Privacy'
+- Select 'General' tab
+- There should be '"Spoofy-macOS-ARM64" was blocked ..' message
+- Click 'Open Anyway' button
+- Click 'Open' button on prompt
+```
+`Spoofy` is now allowed to run!
+
+### Run as Python Module
+Clone `git` repository
+```
+git clone https://github.com/kgrv-me/spoofy.git
+```
+
+Install dependencies
+```
+pip3 install --requirement requirements.txt
+```
+
+or utilize built-in virtual environment before installing
+```
+python3 -m venv DIR
+source DIR/bin/activate
+```
+
+Run as Python module inside the repository
+```
+sudo python3 -m spoofy
+```
+*`Terminal` needs to be `Run as administrator` on `Windows`*
 
 ### CLI
 *Requires higher privilege to run!*
@@ -75,6 +106,7 @@ sudo ./Spoofy-macOS-ARM64
 
 Press 'Enter' to continue...
 ```
+
 It will scan network for local hosts automatically
 ```
 ~ sudo ./Spoofy-macOS-ARM64
@@ -97,16 +129,17 @@ Enter `s` as input for configurable settings
 ```
   n) Network scan for local hosts
   r) Reset settings configuration
-  s) Toggle 'SAFE_MODE' for spoofing (Current: True)
+  s) Toggle 'SAFE_MODE' for spoofing (Current: False)
   w) Set 'WAIT_DURATION' to enable auto-revive (Current: 0)
 
 Select setting to configure (b to go back): _
 ```
-`Spoofy` saves edited settings configuration to `settings.conf` for persistency
+
+`Spoofy` saves edited settings configuration to `settings.json` for persistency
 ```
 ~ Spoofy
   ..
-  - settings.conf
+  - settings.json
   - Spoofy-macOS-ARM64
 ```
 
@@ -151,6 +184,7 @@ Select setting to configure (b to go back): w
 Enter duration (in seconds): 16
   'WAIT_DURATION' is now '16.0'
 ```
+
 *Pressing 'Enter' will spoof the same target again!*
 ```
 Select device to temporary disconnect (q to quit): 2
@@ -167,6 +201,7 @@ Press 'Enter' to revive 'CloudNet' (b to go back): q
 Resetting spoofed hosts...
   '11:22:33:44:55:66 - CloudNet' is revived
 ```
+
 `CTRL-C`
 ```
 Press 'Enter' to revive 'CloudNet' (b to go back): ^C
@@ -176,6 +211,7 @@ Initiate cleanup process... DO NOT interrupt!
 Resetting spoofed hosts...
   '11:22:33:44:55:66 - CloudNet' is revived
 ```
+
 `CTRL-D`
 ```
 Press 'Enter' to revive 'CloudNet' (b to go back): ^D
@@ -184,6 +220,7 @@ Initiate cleanup process... DO NOT interrupt!
 Resetting spoofed hosts...
   '11:22:33:44:55:66 - CloudNet' is revived
 ```
+
 `CTRL-Z`
 ```
 Press 'Enter' to revive 'CloudNet' (b to go back): ^Z
@@ -195,6 +232,32 @@ Resetting spoofed hosts...
 ```
 
 ## CHANGELOG
+### 2022-06-03
+#### v0.5-rc
+```
+Added
+- API documentation with 'pdoc3'
+- exception trace in 'utilities.trace_exception()'
+- 'main()' in '__main__.py' for importing
+- 'signals.py' module
+
+Changed
+- package structure to flat modules
+- 'settings.conf' to 'settings.json'
+- 'utilities.exit()' to 'utilities.exit_()' to avoid confusion with built-in
+
+Fixed
+- 'Network.get_netmask()' issue on 'Linux'
+
+Removed
+- 'modules' sub-module
+
+Updated
+- '__main__.py' to utilize 'signals.Signal'
+- package docstring and restructure for API documentation
+- 'run.sh' to run 'sudo' in its place
+```
+
 ### 2022-06-02
 #### v0.4-rc
 ```
@@ -218,6 +281,7 @@ Improved
 
 Updated
 - display messages formats for better UI, UX
+- 'run.sh' to be more compatible with older systems
 - 'Settings' commands
 ```
 

@@ -3,14 +3,13 @@ import logging
 logging.getLogger('scapy.runtime').setLevel(logging.ERROR)
 import os
 
+from .settings import Settings
+from .utilities import threaded
 from ipaddress import IPv4Interface, ip_address
 from manuf import MacParser
 from scapy.all import ARP, Ether, conf, getmacbyip, send, srp
 from subprocess import check_output
 from time import sleep
-
-from .settings import Settings
-from .utilities import threaded
 
 class Network():
     """
@@ -24,22 +23,8 @@ class Network():
         'SonyInte': 'PS'
     }
 
+    #: Dictionary data structure
     get = {'hosts': {}}
-
-    @classmethod
-    def initialize(cls):
-        """
-        Get interface, gateway, and network hosts information.
-        """
-        cls.get_interface()
-        cls.get_gateway()
-        cls.get_hosts()
-
-        if (Settings.get['DEBUG']):
-            print(f"{'':2}(d) Network.get['interface']:")
-            print(f"{'':4}{cls.get['interface']}")
-            print(f"{'':2}(d) Network.get['gateway']:")
-            print(f"{'':4}{cls.get['gateway']}")
 
     @classmethod
     def cleanup(cls):
@@ -55,6 +40,7 @@ class Network():
     def get_gateway(cls):
         """
         Get gateway information.
+
         Return dictionary.
         """
         gwc = conf.route.route('1.1.1.1')
@@ -68,7 +54,8 @@ class Network():
     def get_hosts(cls):
         """
         Get network hosts information via ARP requests.
-        Return list of dictionaries.
+
+        Return dictionary with host IP addresses as keys.
         """
         print("Scanning network for hosts...")
 
@@ -99,6 +86,7 @@ class Network():
     def get_interface(cls):
         """
         Get network interface information.
+
         Return dictionary.
         """
         iface = conf.iface
@@ -123,23 +111,49 @@ class Network():
     def get_netmask(cls, ip):
         """
         Get network interface netmask via 'subprocess'.
+
         Return netmask string.
+
+        Parameter:
+            ip -- (string) target IP address
         """
         if (os.name == 'nt'):
             output = check_output(f'powershell "ipconfig | Select-String -Pattern {ip} -Context 1"', shell=True).decode()
             netmask = output.split(' ')[-1].rstrip()
         else:
             output = check_output(f"ifconfig | grep {ip}", shell=True).decode()
-            n = output.split(' ')[3].replace('0x', '')
-            netmask = '.'.join(str(int(n[i:i+2], 16)) for i in range(0, len(n), 2))
+            for i, s in enumerate(output.split(' ')):
+                if (s == 'netmask'):
+                    break
+            n = output.split(' ')[i+1].replace('0x', '')
+            netmask = n if '.' in n else '.'.join(str(int(n[i:i+2], 16)) for i in range(0, len(n), 2))
         return netmask
+
+    @classmethod
+    def initialize(cls):
+        """
+        Get interface, gateway, and network hosts information.
+        """
+        cls.get_interface()
+        cls.get_gateway()
+        cls.get_hosts()
+
+        if (Settings.get['DEBUG']):
+            print(f"{'':2}(d) Network.get['interface']:")
+            print(f"{'':4}{cls.get['interface']}")
+            print(f"{'':2}(d) Network.get['gateway']:")
+            print(f"{'':4}{cls.get['gateway']}")
 
     @classmethod
     @threaded
     def kill(cls, host):
         """
         Spoof given host by poisoning ARP cache repeatedly.
+
         This method runs in thread.
+
+        Parameter:
+            host -- (dictionary) host fetched from cls.get
         """
         # Check if host already been killed
         if (host['mac'] in cls.__killed):
@@ -174,7 +188,11 @@ class Network():
     def revive(cls, host):
         """
         Un-spoof given host by stopping spoof thread.
+
         This method runs in thread.
+
+        Parameter:
+            host -- (dictionary) host fetched from cls.get
         """
         del cls.__killed[host['mac']]
 
@@ -201,8 +219,10 @@ class Network():
     @classmethod
     def spoof(cls, host):
         """
-        Spoof and un-spoof host with 'WAIT_DURATION' in settings.
-        Take host index and fetch host dictionary to pass along.
+        Spoof and un-spoof host with 'WAIT_DURATION' in Settings.
+
+        Parameter:
+            host -- (dictionary) host fetched from cls.get
         """
         cls.kill(host)
         sleep(Settings.get['WAIT_DURATION'])
@@ -212,7 +232,11 @@ class Network():
     def tag_vendor(cls, vendor):
         """
         Tag matched vendor.
+
         Return extended name.
+
+        Parameter:
+            vendor -- (string) manufacturer
         """
         tagged = vendor
         if (vendor in cls.__vendor_tags):

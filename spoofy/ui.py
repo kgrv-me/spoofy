@@ -1,12 +1,12 @@
-from time import sleep
-
 from .network import Network
 from .settings import Settings
+from time import sleep
 
 class CLI():
     """
     UI class of CLI type to run program for user interaction.
     """
+    #: Hold command for processing
     cmd = ''
 
     @classmethod
@@ -33,10 +33,9 @@ class CLI():
         """
         # Menu
         print()
-        length = int(Network.get['max_ip_length'])
         for i, ip in enumerate(Network.get['ip_list']):
             h = Network.get['hosts'][str(ip)]
-            ip = str(ip).ljust(length)
+            ip = str(ip).ljust(Network.get['max_ip_length'])
             print(f"{i:>3}) {ip}  |  {h['mac']}  |  {(h['vendor_tagged'])}")
         print()
         print(f"{'l':>3}) GNU GPLv3 License")
@@ -145,6 +144,9 @@ class CLI():
     def terminate(cls, space=True):
         """
         Invoke in case of interruption to properly terminate.
+
+        Parameter:
+            space -- (bool/True) pad 2 extra newlines before the message
         """
         if (Network.get_killed() > 0):
             if (space):
