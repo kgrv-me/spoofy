@@ -1,5 +1,8 @@
 from pathlib import PurePath
+from platform import machine, platform, python_version
 from sysconfig import get_path
+import contextlib
+import importlib.resources
 import json
 
 class Settings():
@@ -18,15 +21,31 @@ class Settings():
 
     #: Dictionary of valid commands lists
     commands = {
-        'back': ['b', 'back', 'B', 'BACK', 'o', 'out', 'O', 'OUT'],
-        'quit': ['e', 'exit', 'E', 'EXIT', 'q', 'quit', 'Q', 'QUIT'],
-        'license': ['l', 'license', 'L', 'LICENSE'],
-        'settings': ['s', 'setting', 'settings', 'S', 'SETTING', 'SETTINGS'],
-        'kill': ['k', 'kill', 'K', 'KILL'],
-        'revive': ['r', 'revive', 'R', 'REVIVE', 'u', 'unkill', 'un-kill', 'U', 'UNKILL', 'UN-KILL']
+        'back': ['b', 'back', 'o', 'out'],
+        'quit': ['e', 'exit', 'q', 'quit'],
+        'info': ['i', 'info', 'information'],
+        'license': ['l', 'license'],
+        'settings': ['s', 'setting', 'settings'],
+        'kill': ['k', 'kill'],
+        'revive': ['r', 'revive', 'u', 'unkill', 'un-kill']
     }
     #: Dictionary data structure
     get = {}
+    #: Dictionary software information
+    info = {
+        'system': {'ARCH': machine(), 'PLATFORM': platform(), 'PYTHON': python_version()}
+    }
+    #: List of characters to sanitize for input
+    sanitize = [
+        # Arrows (^, v, >, <)
+        '\x1b[a', '\x1b[b', '\x1b[c', '\x1b[d',
+        # Command + Arrows
+        '\x05', '\x01',
+        # Option + Arrows
+        '\x1b[1;3a', '\x1b[1;3b', '\x1bf', '\x1bb',
+        # Fn + Arrows
+        '\x1b[5~', '\x1b[6~', '\x1b[f', '\x1b[h'
+    ]
 
     @classmethod
     def __load_settings(cls, path):
@@ -37,7 +56,7 @@ class Settings():
             path -- (string) target path
         """
         with open(path, 'r') as cfg:
-            cls.get = json.loads(cfg.read())
+            cls.get = json.load(cfg)
         if (cls.get['DELAY'] < cls.__minimum_delay):
             cls.get['DELAY'] = cls.__minimum_delay
 
@@ -51,6 +70,41 @@ class Settings():
         """
         with open(path, 'w') as cfg:
             cfg.write(json.dumps(cls.get))
+
+    @classmethod
+    def get_info(cls):
+        """
+        Fetch info information from INFO file.
+
+        Return dictionary info.
+        """
+        if ('software' not in cls.info):
+            path = importlib.resources.path(__package__, 'INFO')
+            if (cls.get['DEBUG']):
+                print(f"{'':2}(d) INFO Type:")
+                print(f"{'':4}{type(path)}")
+            if (isinstance(path, contextlib._GeneratorContextManager)):
+                with importlib.resources.open_binary(__package__, 'INFO') as info:
+                    cls.info['software'] = json.load(info)
+        return cls.info
+
+    @classmethod
+    def initialize(cls):
+        """
+        Get info and load settings if applicable.
+        """
+        cls.load_settings()
+        cls.get_info()
+
+        if (cls.get['DEBUG']):
+            print(f"{'':2}(d) Settings:")
+            print(f"{'':4}{cls.get}")
+            print(f"{'':2}(d) Settings.info:")
+            print(f"{'':4}{cls.info}")
+            print(f"{'':2}(d) Settings.__conf_file:")
+            print(f"{'':4}{cls.__conf_file}")
+            print(f"{'':2}(d) Settings.__conf_file_bak:")
+            print(f"{'':4}{cls.__conf_file_bak}")
 
     @classmethod
     def load_settings(cls):
@@ -70,14 +124,6 @@ class Settings():
                 cls.__load_settings(cls.__conf_file_bak)
             except:
                 pass
-
-        if (cls.get['DEBUG']):
-            print(f"{'':2}(d) Settings:")
-            print(f"{'':4}{cls.get}")
-            print(f"{'':2}(d) Settings.__conf_file:")
-            print(f"{'':4}{cls.__conf_file}")
-            print(f"{'':2}(d) Settings.__conf_file_bak:")
-            print(f"{'':4}{cls.__conf_file_bak}")
 
     @classmethod
     def reset_settings(cls):

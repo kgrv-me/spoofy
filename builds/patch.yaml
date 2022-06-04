@@ -1,0 +1,25 @@
+manuf:
+  manuf.py:
+    replace:
+      io.open(manuf_name, "r":
+        importlib.resources.open_text(__package__, "manuf"
+    delete:
+      300: 305
+    insert:
+      40: import importlib.resources
+      301: "{8}with importlib.resources.path(__package__, 'manuf') as p:"
+      302: "{12}manuf_file_path = p"
+
+scapy:
+  __init__.py:
+    replace:
+      __file__:
+        '"PLACEHOLDER"'
+      open(version_file, 'r':
+        importlib.resources.open_text(__package__, 'VERSION'
+    insert:
+      13: import importlib.resources
+  main.py:
+    replace:
+      __file__:
+        '"PLACEHOLDER"'

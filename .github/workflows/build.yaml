@@ -1,0 +1,55 @@
+name: "Build Standalone"
+
+on:
+  push:
+    tags: [ v* ]
+  workflow_dispatch:
+
+env:
+  ARCH: x86_64
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  Build:
+    strategy:
+      matrix:
+        os: [ macos-latest, ubuntu-latest, windows-latest ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: pip3 install --requirement requirements.txt
+
+      - name: Install Build Dependencies
+        run: pip3 install --requirement builds/requirements.txt
+
+      - name: Configure PyOxidizer BZL
+        run: ./builds/build.sh config
+
+      - name: Patch Python Packages
+        run: python3 builds/patch.py
+
+      - name: Create INFO File
+        run: ./builds/build.sh info ${{ github.ref_name }}
+
+      - name: PyOxidizer Build
+        run: pyoxidizer build --release
+
+      - name: Zip Package
+        run: ./builds/build.sh zip
+
+      - name: Draft Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          body_path: ${{ github.workspace }}/builds/release-draft.md
+          files: |
+            *.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

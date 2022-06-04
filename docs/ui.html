@@ -38,9 +38,47 @@ class CLI():
     cmd = &#39;&#39;
 
     @classmethod
+    def input_(cls, msg):
+        &#34;&#34;&#34;
+        Return processed user input.
+        &#34;&#34;&#34;
+        cmd = input(msg).strip().lower()
+        for char in Settings.sanitize:
+            cmd = cmd.replace(char, &#39;&#39;)
+
+        if (Settings.get[&#39;DEBUG&#39;]):
+            print(f&#34;{&#39;&#39;:2}(d) REPR(CMD): {repr(cmd)}&#34;)
+
+        return cmd
+
+    @classmethod
+    def process_info_menu(cls):
+        &#34;&#34;&#34;
+        Display software/system information.
+        &#34;&#34;&#34;
+        sm = Settings.info[&#39;system&#39;]
+        arch_info = &#39;&#39; if sm[&#39;ARCH&#39;] in sm[&#39;PLATFORM&#39;] else f&#34; ({sm[&#39;ARCH&#39;]})&#34;
+
+        print()
+        print(f&#34;{&#39;&#39;:2}Refer to embedded &#39;README.md&#39; for documentation&#34;)
+        print(f&#34;{&#39;&#39;:2}or visit https://github.com/kgrv-me/spoofy/blob/main/README.md&#34;)
+        print()
+
+        print(f&#34;{&#39;&#39;:2}Software&#34;)
+        print(f&#34;{&#39;&#39;:4}Python {sm[&#39;PYTHON&#39;]}&#34;)
+        if (&#39;software&#39; in Settings.info):
+            sw = Settings.info[&#39;software&#39;]
+            print(f&#34;{&#39;&#39;:4}Spoofy-{sw[&#39;OS&#39;]}-{sw[&#39;ARCH&#39;]} {sw[&#39;VERSION&#39;]}&#34;)
+        print()
+
+        print(f&#34;{&#39;&#39;:2}System&#34;)
+        print(f&#34;{&#39;&#39;:4}{sm[&#39;PLATFORM&#39;]}{arch_info}&#34;)
+        print()
+        cls.cmd = cls.input_(&#34;Press &#39;Enter&#39; to go back... &#34;)
+
+    @classmethod
     def process_license_menu(cls):
         &#34;&#34;&#34;
-        Process user input on license menu.
         Display information about license.
         &#34;&#34;&#34;
         print()
@@ -51,12 +89,13 @@ class CLI():
         print()
         print(f&#34;{&#39;&#39;:2}(Disclaimer) Use this software at your own risk!&#34;)
         print()
-        cls.cmd = input(&#34;Press &#39;Enter&#39; to go back... &#34;).strip()
+        cls.cmd = cls.input_(&#34;Press &#39;Enter&#39; to go back... &#34;)
 
     @classmethod
     def process_main_menu(cls):
         &#34;&#34;&#34;
         Process user input on main menu.
+
         List available hosts for selection.
         &#34;&#34;&#34;
         # Menu
@@ -66,6 +105,7 @@ class CLI():
             ip = str(ip).ljust(Network.get[&#39;max_ip_length&#39;])
             print(f&#34;{i:&gt;3}) {ip}  |  {h[&#39;mac&#39;]}  |  {(h[&#39;vendor_tagged&#39;])}&#34;)
         print()
+        print(f&#34;{&#39;i&#39;:&gt;3}) Information&#34;)
         print(f&#34;{&#39;l&#39;:&gt;3}) GNU GPLv3 License&#34;)
         print(f&#34;{&#39;s&#39;:&gt;3}) Settings Configuration&#34;)
         print()
@@ -73,8 +113,10 @@ class CLI():
         # Process commands
         auto_msg = &#39; temporary&#39; if Settings.get[&#39;WAIT_DURATION&#39;] != 0 else &#39;&#39;
         safe_mode = &#39; ~ SAFE_MODE ~&#39; if Settings.get[&#39;SAFE_MODE&#39;] else &#39;&#39;
-        cls.cmd = input(f&#34;Select device to{auto_msg} disconnect (q to quit):{safe_mode} &#34;).strip()
-        if (cls.cmd in Settings.commands[&#39;license&#39;]):
+        cls.cmd = cls.input_(f&#34;Select device to{auto_msg} disconnect (q to quit):{safe_mode} &#34;)
+        if (cls.cmd in Settings.commands[&#39;info&#39;]):
+            cls.process_info_menu()
+        elif (cls.cmd in Settings.commands[&#39;license&#39;]):
             cls.process_license_menu()
         elif (cls.cmd in Settings.commands[&#39;settings&#39;]):
             cls.process_settings_menu()
@@ -92,7 +134,7 @@ class CLI():
                     Network.kill(host)
                     sleep(Settings.get[&#39;DELAY&#39;])
                     print()
-                    cls.cmd = input(f&#34;Press &#39;Enter&#39; to revive &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;).strip()
+                    cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to revive &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
                     if (cls.cmd == &#39;&#39;):
                         cls.cmd = &#39;revive&#39;
                 elif (
@@ -102,14 +144,14 @@ class CLI():
                     Network.revive(host)
                     sleep(Settings.get[&#39;DELAY&#39;])
                     print()
-                    cls.cmd = input(f&#34;Press &#39;Enter&#39; to spoofy &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;).strip()
+                    cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to spoofy &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
                     if (cls.cmd == &#39;&#39;):
                         cls.cmd = &#39;kill&#39;
                 else:
                     Network.spoof(host)
                     sleep(Settings.get[&#39;DELAY&#39;])
                     print()
-                    cls.cmd = input(f&#34;Press &#39;Enter&#39; to spoof &#39;{host[&#39;vendor&#39;]}&#39; again (b to go back):{safe_mode} &#34;).strip()
+                    cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to spoof &#39;{host[&#39;vendor&#39;]}&#39; again (b to go back):{safe_mode} &#34;)
         elif (
             cls.cmd not in Settings.commands[&#39;quit&#39;]
             and cls.cmd != &#39;&#39;
@@ -120,6 +162,7 @@ class CLI():
     def process_settings_menu(cls):
         &#34;&#34;&#34;
         Process user input on settings menu.
+
         List available settings for selection.
         &#34;&#34;&#34;
         # Menu
@@ -131,7 +174,7 @@ class CLI():
         print()
 
         # Process commands
-        cls.cmd = input(&#34;Select setting to configure (b to go back): &#34;).strip()
+        cls.cmd = cls.input_(&#34;Select setting to configure (b to go back): &#34;)
         if (cls.cmd == &#39;n&#39;):
             Network.initialize()
         elif (cls.cmd == &#39;r&#39;):
@@ -139,12 +182,12 @@ class CLI():
         elif (cls.cmd == &#39;s&#39;):
             Settings.toggle_safe_mode()
         elif (cls.cmd == &#39;w&#39;):
-            cls.cmd = input(&#34;Enter duration (in seconds): &#34;).strip()
+            cls.cmd = cls.input_(&#34;Enter duration (in seconds): &#34;)
             if (cls.cmd.replace(&#39;.&#39;, &#39;&#39;).isdecimal()):
                 Settings.set_wait_duration(float(cls.cmd))
             else:
                 print(f&#34;{&#39;&#39;:2}(e22) Invalid duration for &#39;WAIT_DURATION&#39;!&#34;)
-        elif (cls.cmd == &#39;TOGGLE_DEBUG_MODE&#39;):
+        elif (cls.cmd == &#39;!debug&#39;):
             Settings.toggle_debug_mode()
         elif (
             cls.cmd not in Settings.commands[&#39;back&#39;]
@@ -160,7 +203,7 @@ class CLI():
         &#34;&#34;&#34;
         print()
         print(&#34;Welcome to &#39;Spoofy&#39;!&#34;)
-        Settings.load_settings()
+        Settings.initialize()
         Network.initialize()
 
         while (cls.cmd not in Settings.commands[&#39;quit&#39;]):
@@ -211,9 +254,47 @@ class CLI():
     cmd = &#39;&#39;
 
     @classmethod
+    def input_(cls, msg):
+        &#34;&#34;&#34;
+        Return processed user input.
+        &#34;&#34;&#34;
+        cmd = input(msg).strip().lower()
+        for char in Settings.sanitize:
+            cmd = cmd.replace(char, &#39;&#39;)
+
+        if (Settings.get[&#39;DEBUG&#39;]):
+            print(f&#34;{&#39;&#39;:2}(d) REPR(CMD): {repr(cmd)}&#34;)
+
+        return cmd
+
+    @classmethod
+    def process_info_menu(cls):
+        &#34;&#34;&#34;
+        Display software/system information.
+        &#34;&#34;&#34;
+        sm = Settings.info[&#39;system&#39;]
+        arch_info = &#39;&#39; if sm[&#39;ARCH&#39;] in sm[&#39;PLATFORM&#39;] else f&#34; ({sm[&#39;ARCH&#39;]})&#34;
+
+        print()
+        print(f&#34;{&#39;&#39;:2}Refer to embedded &#39;README.md&#39; for documentation&#34;)
+        print(f&#34;{&#39;&#39;:2}or visit https://github.com/kgrv-me/spoofy/blob/main/README.md&#34;)
+        print()
+
+        print(f&#34;{&#39;&#39;:2}Software&#34;)
+        print(f&#34;{&#39;&#39;:4}Python {sm[&#39;PYTHON&#39;]}&#34;)
+        if (&#39;software&#39; in Settings.info):
+            sw = Settings.info[&#39;software&#39;]
+            print(f&#34;{&#39;&#39;:4}Spoofy-{sw[&#39;OS&#39;]}-{sw[&#39;ARCH&#39;]} {sw[&#39;VERSION&#39;]}&#34;)
+        print()
+
+        print(f&#34;{&#39;&#39;:2}System&#34;)
+        print(f&#34;{&#39;&#39;:4}{sm[&#39;PLATFORM&#39;]}{arch_info}&#34;)
+        print()
+        cls.cmd = cls.input_(&#34;Press &#39;Enter&#39; to go back... &#34;)
+
+    @classmethod
     def process_license_menu(cls):
         &#34;&#34;&#34;
-        Process user input on license menu.
         Display information about license.
         &#34;&#34;&#34;
         print()
@@ -224,12 +305,13 @@ class CLI():
         print()
         print(f&#34;{&#39;&#39;:2}(Disclaimer) Use this software at your own risk!&#34;)
         print()
-        cls.cmd = input(&#34;Press &#39;Enter&#39; to go back... &#34;).strip()
+        cls.cmd = cls.input_(&#34;Press &#39;Enter&#39; to go back... &#34;)
 
     @classmethod
     def process_main_menu(cls):
         &#34;&#34;&#34;
         Process user input on main menu.
+
         List available hosts for selection.
         &#34;&#34;&#34;
         # Menu
@@ -239,6 +321,7 @@ class CLI():
             ip = str(ip).ljust(Network.get[&#39;max_ip_length&#39;])
             print(f&#34;{i:&gt;3}) {ip}  |  {h[&#39;mac&#39;]}  |  {(h[&#39;vendor_tagged&#39;])}&#34;)
         print()
+        print(f&#34;{&#39;i&#39;:&gt;3}) Information&#34;)
         print(f&#34;{&#39;l&#39;:&gt;3}) GNU GPLv3 License&#34;)
         print(f&#34;{&#39;s&#39;:&gt;3}) Settings Configuration&#34;)
         print()
@@ -246,8 +329,10 @@ class CLI():
         # Process commands
         auto_msg = &#39; temporary&#39; if Settings.get[&#39;WAIT_DURATION&#39;] != 0 else &#39;&#39;
         safe_mode = &#39; ~ SAFE_MODE ~&#39; if Settings.get[&#39;SAFE_MODE&#39;] else &#39;&#39;
-        cls.cmd = input(f&#34;Select device to{auto_msg} disconnect (q to quit):{safe_mode} &#34;).strip()
-        if (cls.cmd in Settings.commands[&#39;license&#39;]):
+        cls.cmd = cls.input_(f&#34;Select device to{auto_msg} disconnect (q to quit):{safe_mode} &#34;)
+        if (cls.cmd in Settings.commands[&#39;info&#39;]):
+            cls.process_info_menu()
+        elif (cls.cmd in Settings.commands[&#39;license&#39;]):
             cls.process_license_menu()
         elif (cls.cmd in Settings.commands[&#39;settings&#39;]):
             cls.process_settings_menu()
@@ -265,7 +350,7 @@ class CLI():
                     Network.kill(host)
                     sleep(Settings.get[&#39;DELAY&#39;])
                     print()
-                    cls.cmd = input(f&#34;Press &#39;Enter&#39; to revive &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;).strip()
+                    cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to revive &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
                     if (cls.cmd == &#39;&#39;):
                         cls.cmd = &#39;revive&#39;
                 elif (
@@ -275,14 +360,14 @@ class CLI():
                     Network.revive(host)
                     sleep(Settings.get[&#39;DELAY&#39;])
                     print()
-                    cls.cmd = input(f&#34;Press &#39;Enter&#39; to spoofy &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;).strip()
+                    cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to spoofy &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
                     if (cls.cmd == &#39;&#39;):
                         cls.cmd = &#39;kill&#39;
                 else:
                     Network.spoof(host)
                     sleep(Settings.get[&#39;DELAY&#39;])
                     print()
-                    cls.cmd = input(f&#34;Press &#39;Enter&#39; to spoof &#39;{host[&#39;vendor&#39;]}&#39; again (b to go back):{safe_mode} &#34;).strip()
+                    cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to spoof &#39;{host[&#39;vendor&#39;]}&#39; again (b to go back):{safe_mode} &#34;)
         elif (
             cls.cmd not in Settings.commands[&#39;quit&#39;]
             and cls.cmd != &#39;&#39;
@@ -293,6 +378,7 @@ class CLI():
     def process_settings_menu(cls):
         &#34;&#34;&#34;
         Process user input on settings menu.
+
         List available settings for selection.
         &#34;&#34;&#34;
         # Menu
@@ -304,7 +390,7 @@ class CLI():
         print()
 
         # Process commands
-        cls.cmd = input(&#34;Select setting to configure (b to go back): &#34;).strip()
+        cls.cmd = cls.input_(&#34;Select setting to configure (b to go back): &#34;)
         if (cls.cmd == &#39;n&#39;):
             Network.initialize()
         elif (cls.cmd == &#39;r&#39;):
@@ -312,12 +398,12 @@ class CLI():
         elif (cls.cmd == &#39;s&#39;):
             Settings.toggle_safe_mode()
         elif (cls.cmd == &#39;w&#39;):
-            cls.cmd = input(&#34;Enter duration (in seconds): &#34;).strip()
+            cls.cmd = cls.input_(&#34;Enter duration (in seconds): &#34;)
             if (cls.cmd.replace(&#39;.&#39;, &#39;&#39;).isdecimal()):
                 Settings.set_wait_duration(float(cls.cmd))
             else:
                 print(f&#34;{&#39;&#39;:2}(e22) Invalid duration for &#39;WAIT_DURATION&#39;!&#34;)
-        elif (cls.cmd == &#39;TOGGLE_DEBUG_MODE&#39;):
+        elif (cls.cmd == &#39;!debug&#39;):
             Settings.toggle_debug_mode()
         elif (
             cls.cmd not in Settings.commands[&#39;back&#39;]
@@ -333,7 +419,7 @@ class CLI():
         &#34;&#34;&#34;
         print()
         print(&#34;Welcome to &#39;Spoofy&#39;!&#34;)
-        Settings.load_settings()
+        Settings.initialize()
         Network.initialize()
 
         while (cls.cmd not in Settings.commands[&#39;quit&#39;]):
@@ -366,12 +452,70 @@ class CLI():
 </dl>
 <h3>Static methods</h3>
 <dl>
+<dt id="spoofy.ui.CLI.input_"><code class="name flex">
+<span>def <span class="ident">input_</span></span>(<span>msg)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return processed user input.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def input_(cls, msg):
+    &#34;&#34;&#34;
+    Return processed user input.
+    &#34;&#34;&#34;
+    cmd = input(msg).strip().lower()
+    for char in Settings.sanitize:
+        cmd = cmd.replace(char, &#39;&#39;)
+
+    if (Settings.get[&#39;DEBUG&#39;]):
+        print(f&#34;{&#39;&#39;:2}(d) REPR(CMD): {repr(cmd)}&#34;)
+
+    return cmd</code></pre>
+</details>
+</dd>
+<dt id="spoofy.ui.CLI.process_info_menu"><code class="name flex">
+<span>def <span class="ident">process_info_menu</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Display software/system information.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def process_info_menu(cls):
+    &#34;&#34;&#34;
+    Display software/system information.
+    &#34;&#34;&#34;
+    sm = Settings.info[&#39;system&#39;]
+    arch_info = &#39;&#39; if sm[&#39;ARCH&#39;] in sm[&#39;PLATFORM&#39;] else f&#34; ({sm[&#39;ARCH&#39;]})&#34;
+
+    print()
+    print(f&#34;{&#39;&#39;:2}Refer to embedded &#39;README.md&#39; for documentation&#34;)
+    print(f&#34;{&#39;&#39;:2}or visit https://github.com/kgrv-me/spoofy/blob/main/README.md&#34;)
+    print()
+
+    print(f&#34;{&#39;&#39;:2}Software&#34;)
+    print(f&#34;{&#39;&#39;:4}Python {sm[&#39;PYTHON&#39;]}&#34;)
+    if (&#39;software&#39; in Settings.info):
+        sw = Settings.info[&#39;software&#39;]
+        print(f&#34;{&#39;&#39;:4}Spoofy-{sw[&#39;OS&#39;]}-{sw[&#39;ARCH&#39;]} {sw[&#39;VERSION&#39;]}&#34;)
+    print()
+
+    print(f&#34;{&#39;&#39;:2}System&#34;)
+    print(f&#34;{&#39;&#39;:4}{sm[&#39;PLATFORM&#39;]}{arch_info}&#34;)
+    print()
+    cls.cmd = cls.input_(&#34;Press &#39;Enter&#39; to go back... &#34;)</code></pre>
+</details>
+</dd>
 <dt id="spoofy.ui.CLI.process_license_menu"><code class="name flex">
 <span>def <span class="ident">process_license_menu</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Process user input on license menu.
-Display information about license.</p></div>
+<div class="desc"><p>Display information about license.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -379,7 +523,6 @@ Display information about license.</p></div>
 <pre><code class="python">@classmethod
 def process_license_menu(cls):
     &#34;&#34;&#34;
-    Process user input on license menu.
     Display information about license.
     &#34;&#34;&#34;
     print()
@@ -390,15 +533,15 @@ def process_license_menu(cls):
     print()
     print(f&#34;{&#39;&#39;:2}(Disclaimer) Use this software at your own risk!&#34;)
     print()
-    cls.cmd = input(&#34;Press &#39;Enter&#39; to go back... &#34;).strip()</code></pre>
+    cls.cmd = cls.input_(&#34;Press &#39;Enter&#39; to go back... &#34;)</code></pre>
 </details>
 </dd>
 <dt id="spoofy.ui.CLI.process_main_menu"><code class="name flex">
 <span>def <span class="ident">process_main_menu</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Process user input on main menu.
-List available hosts for selection.</p></div>
+<div class="desc"><p>Process user input on main menu.</p>
+<p>List available hosts for selection.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -407,6 +550,7 @@ List available hosts for selection.</p></div>
 def process_main_menu(cls):
     &#34;&#34;&#34;
     Process user input on main menu.
+
     List available hosts for selection.
     &#34;&#34;&#34;
     # Menu
@@ -416,6 +560,7 @@ def process_main_menu(cls):
         ip = str(ip).ljust(Network.get[&#39;max_ip_length&#39;])
         print(f&#34;{i:&gt;3}) {ip}  |  {h[&#39;mac&#39;]}  |  {(h[&#39;vendor_tagged&#39;])}&#34;)
     print()
+    print(f&#34;{&#39;i&#39;:&gt;3}) Information&#34;)
     print(f&#34;{&#39;l&#39;:&gt;3}) GNU GPLv3 License&#34;)
     print(f&#34;{&#39;s&#39;:&gt;3}) Settings Configuration&#34;)
     print()
@@ -423,8 +568,10 @@ def process_main_menu(cls):
     # Process commands
     auto_msg = &#39; temporary&#39; if Settings.get[&#39;WAIT_DURATION&#39;] != 0 else &#39;&#39;
     safe_mode = &#39; ~ SAFE_MODE ~&#39; if Settings.get[&#39;SAFE_MODE&#39;] else &#39;&#39;
-    cls.cmd = input(f&#34;Select device to{auto_msg} disconnect (q to quit):{safe_mode} &#34;).strip()
-    if (cls.cmd in Settings.commands[&#39;license&#39;]):
+    cls.cmd = cls.input_(f&#34;Select device to{auto_msg} disconnect (q to quit):{safe_mode} &#34;)
+    if (cls.cmd in Settings.commands[&#39;info&#39;]):
+        cls.process_info_menu()
+    elif (cls.cmd in Settings.commands[&#39;license&#39;]):
         cls.process_license_menu()
     elif (cls.cmd in Settings.commands[&#39;settings&#39;]):
         cls.process_settings_menu()
@@ -442,7 +589,7 @@ def process_main_menu(cls):
                 Network.kill(host)
                 sleep(Settings.get[&#39;DELAY&#39;])
                 print()
-                cls.cmd = input(f&#34;Press &#39;Enter&#39; to revive &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;).strip()
+                cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to revive &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
                 if (cls.cmd == &#39;&#39;):
                     cls.cmd = &#39;revive&#39;
             elif (
@@ -452,14 +599,14 @@ def process_main_menu(cls):
                 Network.revive(host)
                 sleep(Settings.get[&#39;DELAY&#39;])
                 print()
-                cls.cmd = input(f&#34;Press &#39;Enter&#39; to spoofy &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;).strip()
+                cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to spoofy &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
                 if (cls.cmd == &#39;&#39;):
                     cls.cmd = &#39;kill&#39;
             else:
                 Network.spoof(host)
                 sleep(Settings.get[&#39;DELAY&#39;])
                 print()
-                cls.cmd = input(f&#34;Press &#39;Enter&#39; to spoof &#39;{host[&#39;vendor&#39;]}&#39; again (b to go back):{safe_mode} &#34;).strip()
+                cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to spoof &#39;{host[&#39;vendor&#39;]}&#39; again (b to go back):{safe_mode} &#34;)
     elif (
         cls.cmd not in Settings.commands[&#39;quit&#39;]
         and cls.cmd != &#39;&#39;
@@ -471,8 +618,8 @@ def process_main_menu(cls):
 <span>def <span class="ident">process_settings_menu</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Process user input on settings menu.
-List available settings for selection.</p></div>
+<div class="desc"><p>Process user input on settings menu.</p>
+<p>List available settings for selection.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -481,6 +628,7 @@ List available settings for selection.</p></div>
 def process_settings_menu(cls):
     &#34;&#34;&#34;
     Process user input on settings menu.
+
     List available settings for selection.
     &#34;&#34;&#34;
     # Menu
@@ -492,7 +640,7 @@ def process_settings_menu(cls):
     print()
 
     # Process commands
-    cls.cmd = input(&#34;Select setting to configure (b to go back): &#34;).strip()
+    cls.cmd = cls.input_(&#34;Select setting to configure (b to go back): &#34;)
     if (cls.cmd == &#39;n&#39;):
         Network.initialize()
     elif (cls.cmd == &#39;r&#39;):
@@ -500,12 +648,12 @@ def process_settings_menu(cls):
     elif (cls.cmd == &#39;s&#39;):
         Settings.toggle_safe_mode()
     elif (cls.cmd == &#39;w&#39;):
-        cls.cmd = input(&#34;Enter duration (in seconds): &#34;).strip()
+        cls.cmd = cls.input_(&#34;Enter duration (in seconds): &#34;)
         if (cls.cmd.replace(&#39;.&#39;, &#39;&#39;).isdecimal()):
             Settings.set_wait_duration(float(cls.cmd))
         else:
             print(f&#34;{&#39;&#39;:2}(e22) Invalid duration for &#39;WAIT_DURATION&#39;!&#34;)
-    elif (cls.cmd == &#39;TOGGLE_DEBUG_MODE&#39;):
+    elif (cls.cmd == &#39;!debug&#39;):
         Settings.toggle_debug_mode()
     elif (
         cls.cmd not in Settings.commands[&#39;back&#39;]
@@ -531,7 +679,7 @@ def run(cls):
     &#34;&#34;&#34;
     print()
     print(&#34;Welcome to &#39;Spoofy&#39;!&#34;)
-    Settings.load_settings()
+    Settings.initialize()
     Network.initialize()
 
     while (cls.cmd not in Settings.commands[&#39;quit&#39;]):
@@ -590,6 +738,8 @@ def terminate(cls, space=True):
 <h4><code><a title="spoofy.ui.CLI" href="#spoofy.ui.CLI">CLI</a></code></h4>
 <ul class="">
 <li><code><a title="spoofy.ui.CLI.cmd" href="#spoofy.ui.CLI.cmd">cmd</a></code></li>
+<li><code><a title="spoofy.ui.CLI.input_" href="#spoofy.ui.CLI.input_">input_</a></code></li>
+<li><code><a title="spoofy.ui.CLI.process_info_menu" href="#spoofy.ui.CLI.process_info_menu">process_info_menu</a></code></li>
 <li><code><a title="spoofy.ui.CLI.process_license_menu" href="#spoofy.ui.CLI.process_license_menu">process_license_menu</a></code></li>
 <li><code><a title="spoofy.ui.CLI.process_main_menu" href="#spoofy.ui.CLI.process_main_menu">process_main_menu</a></code></li>
 <li><code><a title="spoofy.ui.CLI.process_settings_menu" href="#spoofy.ui.CLI.process_settings_menu">process_settings_menu</a></code></li>

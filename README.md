@@ -6,7 +6,7 @@ A cross-platform CLI Python package for spoofing! *Inspired by [`elmoCut`](https
 ## REQUIREMENT
 ### Host Network
 - `Spoofy` needs host network access to work correctly
-- Ensure compatible network settings in VMs before using
+- Ensure compatible network settings in VMs before use
   - `Parallels`, `VirtualBox`, `VMware`
 
 ### Python Module (Not Required for Standalone)
@@ -34,20 +34,24 @@ A cross-platform CLI Python package for spoofing! *Inspired by [`elmoCut`](https
 ### Run as Standalone
 **NOTE:** Ensure to only download from trusted sources!
 
-There is `run.sh` for `macOS` and `Linux` to help run `sudo`
+**Official Release:** https://github.com/kgrv-me/spoofy/releases/latest
 
-- It can be launched via double clicks as well (Open with `Terminal.app` on `macOS`)
-
-*Right click and 'Run as administrator' on executable for `Windows`*
+- *Double click* `run.sh` to run on `macOS` and `Linux` (`.sh` needs to open with `Terminal`)
+- *Right click* on `Spoofy-Windows-x86_64.exe` and select `Run as administrator` on `Windows`
 ```
-~ Spoofy
-  - LICENSE
-  - README.md
-  - run.sh
-  - Spoofy-macOS-ARM64
+[ macOS ]                   [ Linux ]                   [ Windows ]
+~ Spoofy                    ~ Spoofy                    ~ Spoofy
+  - LICENSE                   - LICENSE                   ~ lib
+  - README.md                 - README.md                 - LICENSE
+  > run.sh                    > run.sh                    - python3.dll
+  - Spoofy-macOS-ARM64        - Spoofy-Linux-x86_64       - python39.dll
+                                                          - README.md
+                                                          > Spoofy-Windows-x86_64.exe
+                                                          - vcruntime140.dll
+                                                          - vcruntime140_1.dll
 ```
 
-or run the executable via terminal
+or run the executable via terminal on `macOS` and `Linux`
 ```
 sudo ./Spoofy-macOS-ARM64
 ```
@@ -55,10 +59,10 @@ sudo ./Spoofy-macOS-ARM64
 #### Cannot be opened on macOS
 Executable needs to be allowed through `Gatekeeper` on `macOS` first with
 ```
-- Hold 'CTRL'
-- 'Right-Click' on 'Spoofy-macOS-ARM64'
+- Hold 'Control ^'
+- Right click on 'Spoofy-macOS-ARM64'
 - Select 'Open' from context menu
-- Click 'Open' again on prompt
+- Click 'Open' button on prompt
 ```
 
 or through system preferences
@@ -118,10 +122,30 @@ Scanning network for hosts...
   1) 192.168.1.2  |  ff:ee:dd:cc:bb:aa  |  Apple
   2) 192.168.1.3  |  11:22:33:44:55:66  |  CloudNet (PS)
 
+  i) Information
   l) GNU GPLv3 License
   s) Settings Configuration
 
 Select device to disconnect (q to quit): _
+```
+
+#### About Information
+Enter `i` in main menu to display relevant information
+```
+  Refer to embedded 'README.md' for documentation
+  or visit https://github.com/kgrv-me/spoofy/blob/main/README.md
+
+  Repository
+    https://github.com/kgrv-me/spoofy
+
+  Software
+    Python 3.10.4
+    Spoofy-macOS-ARM64 v1.0-rc
+
+  System
+    macOS-12.4-arm64-arm-64bit
+
+Press 'Enter' to go back... _
 ```
 
 #### Settings
@@ -152,6 +176,7 @@ Select setting to configure (b to go back): _
   1) 192.168.1.2  |  ff:ee:dd:cc:bb:aa  |  Apple
   2) 192.168.1.3  |  11:22:33:44:55:66  |  CloudNet (PS)
 
+  i) Information
   l) GNU GPLv3 License
   s) Settings Configuration
 
@@ -232,6 +257,35 @@ Resetting spoofed hosts...
 ```
 
 ## CHANGELOG
+### 2022-06-05
+#### v1.0
+```
+Added
+- 'CLI.input_()' with input sanitation
+- GitHub templates for issue/feature
+- 'INFO' for standalone during build process
+- information menu
+- 'patch.yaml' patch file
+- 'release-draft.md' for release template
+- 'requirements-build.txt' for Python dependencies in build process
+- 'Settings'
+    - 'get_info()' to load embedded 'INFO' with measurement against spoofing
+    - 'initialize()' to call instead of 'load_settings()'
+    - to fetch system and Python information
+
+Changed
+- build structure to directory 'builds'
+
+Updated
+- 'build.sh' to support 'PyOxidizer' configure and 'INFO'
+- 'build.yaml' for new build structure and capabilities
+- 'CLI' to utilize 'cls.input_()'
+- 'patch.py' to utilize 'patch.yaml'
+- 'Settings'
+    - '__load_settings()' to be ~20x faster
+    - to support 'CLI.input_()' and 'INFO'
+```
+
 ### 2022-06-03
 #### v0.5-rc
 ```

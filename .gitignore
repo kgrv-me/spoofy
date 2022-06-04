@@ -6,7 +6,11 @@ venv/
 # Files
 **/__pycache__
 **/.DS_Store
-**.bak
+**.bak*
 **.conf
+**.json
+*.bzl
 *.spec
 *.zip
+**INFO
+**test*

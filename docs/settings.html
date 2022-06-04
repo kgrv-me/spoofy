@@ -27,7 +27,10 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from pathlib import PurePath
+from platform import machine, platform, python_version
 from sysconfig import get_path
+import contextlib
+import importlib.resources
 import json
 
 class Settings():
@@ -46,15 +49,31 @@ class Settings():
 
     #: Dictionary of valid commands lists
     commands = {
-        &#39;back&#39;: [&#39;b&#39;, &#39;back&#39;, &#39;B&#39;, &#39;BACK&#39;, &#39;o&#39;, &#39;out&#39;, &#39;O&#39;, &#39;OUT&#39;],
-        &#39;quit&#39;: [&#39;e&#39;, &#39;exit&#39;, &#39;E&#39;, &#39;EXIT&#39;, &#39;q&#39;, &#39;quit&#39;, &#39;Q&#39;, &#39;QUIT&#39;],
-        &#39;license&#39;: [&#39;l&#39;, &#39;license&#39;, &#39;L&#39;, &#39;LICENSE&#39;],
-        &#39;settings&#39;: [&#39;s&#39;, &#39;setting&#39;, &#39;settings&#39;, &#39;S&#39;, &#39;SETTING&#39;, &#39;SETTINGS&#39;],
-        &#39;kill&#39;: [&#39;k&#39;, &#39;kill&#39;, &#39;K&#39;, &#39;KILL&#39;],
-        &#39;revive&#39;: [&#39;r&#39;, &#39;revive&#39;, &#39;R&#39;, &#39;REVIVE&#39;, &#39;u&#39;, &#39;unkill&#39;, &#39;un-kill&#39;, &#39;U&#39;, &#39;UNKILL&#39;, &#39;UN-KILL&#39;]
+        &#39;back&#39;: [&#39;b&#39;, &#39;back&#39;, &#39;o&#39;, &#39;out&#39;],
+        &#39;quit&#39;: [&#39;e&#39;, &#39;exit&#39;, &#39;q&#39;, &#39;quit&#39;],
+        &#39;info&#39;: [&#39;i&#39;, &#39;info&#39;, &#39;information&#39;],
+        &#39;license&#39;: [&#39;l&#39;, &#39;license&#39;],
+        &#39;settings&#39;: [&#39;s&#39;, &#39;setting&#39;, &#39;settings&#39;],
+        &#39;kill&#39;: [&#39;k&#39;, &#39;kill&#39;],
+        &#39;revive&#39;: [&#39;r&#39;, &#39;revive&#39;, &#39;u&#39;, &#39;unkill&#39;, &#39;un-kill&#39;]
     }
     #: Dictionary data structure
     get = {}
+    #: Dictionary software information
+    info = {
+        &#39;system&#39;: {&#39;ARCH&#39;: machine(), &#39;PLATFORM&#39;: platform(), &#39;PYTHON&#39;: python_version()}
+    }
+    #: List of characters to sanitize for input
+    sanitize = [
+        # Arrows (^, v, &gt;, &lt;)
+        &#39;\x1b[a&#39;, &#39;\x1b[b&#39;, &#39;\x1b[c&#39;, &#39;\x1b[d&#39;,
+        # Command + Arrows
+        &#39;\x05&#39;, &#39;\x01&#39;,
+        # Option + Arrows
+        &#39;\x1b[1;3a&#39;, &#39;\x1b[1;3b&#39;, &#39;\x1bf&#39;, &#39;\x1bb&#39;,
+        # Fn + Arrows
+        &#39;\x1b[5~&#39;, &#39;\x1b[6~&#39;, &#39;\x1b[f&#39;, &#39;\x1b[h&#39;
+    ]
 
     @classmethod
     def __load_settings(cls, path):
@@ -65,7 +84,7 @@ class Settings():
             path -- (string) target path
         &#34;&#34;&#34;
         with open(path, &#39;r&#39;) as cfg:
-            cls.get = json.loads(cfg.read())
+            cls.get = json.load(cfg)
         if (cls.get[&#39;DELAY&#39;] &lt; cls.__minimum_delay):
             cls.get[&#39;DELAY&#39;] = cls.__minimum_delay
 
@@ -79,6 +98,41 @@ class Settings():
         &#34;&#34;&#34;
         with open(path, &#39;w&#39;) as cfg:
             cfg.write(json.dumps(cls.get))
+
+    @classmethod
+    def get_info(cls):
+        &#34;&#34;&#34;
+        Fetch info information from INFO file.
+
+        Return dictionary info.
+        &#34;&#34;&#34;
+        if (&#39;software&#39; not in cls.info):
+            path = importlib.resources.path(__package__, &#39;INFO&#39;)
+            if (cls.get[&#39;DEBUG&#39;]):
+                print(f&#34;{&#39;&#39;:2}(d) INFO Type:&#34;)
+                print(f&#34;{&#39;&#39;:4}{type(path)}&#34;)
+            if (isinstance(path, contextlib._GeneratorContextManager)):
+                with importlib.resources.open_binary(__package__, &#39;INFO&#39;) as info:
+                    cls.info[&#39;software&#39;] = json.load(info)
+        return cls.info
+
+    @classmethod
+    def initialize(cls):
+        &#34;&#34;&#34;
+        Get info and load settings if applicable.
+        &#34;&#34;&#34;
+        cls.load_settings()
+        cls.get_info()
+
+        if (cls.get[&#39;DEBUG&#39;]):
+            print(f&#34;{&#39;&#39;:2}(d) Settings:&#34;)
+            print(f&#34;{&#39;&#39;:4}{cls.get}&#34;)
+            print(f&#34;{&#39;&#39;:2}(d) Settings.info:&#34;)
+            print(f&#34;{&#39;&#39;:4}{cls.info}&#34;)
+            print(f&#34;{&#39;&#39;:2}(d) Settings.__conf_file:&#34;)
+            print(f&#34;{&#39;&#39;:4}{cls.__conf_file}&#34;)
+            print(f&#34;{&#39;&#39;:2}(d) Settings.__conf_file_bak:&#34;)
+            print(f&#34;{&#39;&#39;:4}{cls.__conf_file_bak}&#34;)
 
     @classmethod
     def load_settings(cls):
@@ -98,14 +152,6 @@ class Settings():
                 cls.__load_settings(cls.__conf_file_bak)
             except:
                 pass
-
-        if (cls.get[&#39;DEBUG&#39;]):
-            print(f&#34;{&#39;&#39;:2}(d) Settings:&#34;)
-            print(f&#34;{&#39;&#39;:4}{cls.get}&#34;)
-            print(f&#34;{&#39;&#39;:2}(d) Settings.__conf_file:&#34;)
-            print(f&#34;{&#39;&#39;:4}{cls.__conf_file}&#34;)
-            print(f&#34;{&#39;&#39;:2}(d) Settings.__conf_file_bak:&#34;)
-            print(f&#34;{&#39;&#39;:4}{cls.__conf_file_bak}&#34;)
 
     @classmethod
     def reset_settings(cls):
@@ -210,15 +256,31 @@ class Settings():
 
     #: Dictionary of valid commands lists
     commands = {
-        &#39;back&#39;: [&#39;b&#39;, &#39;back&#39;, &#39;B&#39;, &#39;BACK&#39;, &#39;o&#39;, &#39;out&#39;, &#39;O&#39;, &#39;OUT&#39;],
-        &#39;quit&#39;: [&#39;e&#39;, &#39;exit&#39;, &#39;E&#39;, &#39;EXIT&#39;, &#39;q&#39;, &#39;quit&#39;, &#39;Q&#39;, &#39;QUIT&#39;],
-        &#39;license&#39;: [&#39;l&#39;, &#39;license&#39;, &#39;L&#39;, &#39;LICENSE&#39;],
-        &#39;settings&#39;: [&#39;s&#39;, &#39;setting&#39;, &#39;settings&#39;, &#39;S&#39;, &#39;SETTING&#39;, &#39;SETTINGS&#39;],
-        &#39;kill&#39;: [&#39;k&#39;, &#39;kill&#39;, &#39;K&#39;, &#39;KILL&#39;],
-        &#39;revive&#39;: [&#39;r&#39;, &#39;revive&#39;, &#39;R&#39;, &#39;REVIVE&#39;, &#39;u&#39;, &#39;unkill&#39;, &#39;un-kill&#39;, &#39;U&#39;, &#39;UNKILL&#39;, &#39;UN-KILL&#39;]
+        &#39;back&#39;: [&#39;b&#39;, &#39;back&#39;, &#39;o&#39;, &#39;out&#39;],
+        &#39;quit&#39;: [&#39;e&#39;, &#39;exit&#39;, &#39;q&#39;, &#39;quit&#39;],
+        &#39;info&#39;: [&#39;i&#39;, &#39;info&#39;, &#39;information&#39;],
+        &#39;license&#39;: [&#39;l&#39;, &#39;license&#39;],
+        &#39;settings&#39;: [&#39;s&#39;, &#39;setting&#39;, &#39;settings&#39;],
+        &#39;kill&#39;: [&#39;k&#39;, &#39;kill&#39;],
+        &#39;revive&#39;: [&#39;r&#39;, &#39;revive&#39;, &#39;u&#39;, &#39;unkill&#39;, &#39;un-kill&#39;]
     }
     #: Dictionary data structure
     get = {}
+    #: Dictionary software information
+    info = {
+        &#39;system&#39;: {&#39;ARCH&#39;: machine(), &#39;PLATFORM&#39;: platform(), &#39;PYTHON&#39;: python_version()}
+    }
+    #: List of characters to sanitize for input
+    sanitize = [
+        # Arrows (^, v, &gt;, &lt;)
+        &#39;\x1b[a&#39;, &#39;\x1b[b&#39;, &#39;\x1b[c&#39;, &#39;\x1b[d&#39;,
+        # Command + Arrows
+        &#39;\x05&#39;, &#39;\x01&#39;,
+        # Option + Arrows
+        &#39;\x1b[1;3a&#39;, &#39;\x1b[1;3b&#39;, &#39;\x1bf&#39;, &#39;\x1bb&#39;,
+        # Fn + Arrows
+        &#39;\x1b[5~&#39;, &#39;\x1b[6~&#39;, &#39;\x1b[f&#39;, &#39;\x1b[h&#39;
+    ]
 
     @classmethod
     def __load_settings(cls, path):
@@ -229,7 +291,7 @@ class Settings():
             path -- (string) target path
         &#34;&#34;&#34;
         with open(path, &#39;r&#39;) as cfg:
-            cls.get = json.loads(cfg.read())
+            cls.get = json.load(cfg)
         if (cls.get[&#39;DELAY&#39;] &lt; cls.__minimum_delay):
             cls.get[&#39;DELAY&#39;] = cls.__minimum_delay
 
@@ -243,6 +305,41 @@ class Settings():
         &#34;&#34;&#34;
         with open(path, &#39;w&#39;) as cfg:
             cfg.write(json.dumps(cls.get))
+
+    @classmethod
+    def get_info(cls):
+        &#34;&#34;&#34;
+        Fetch info information from INFO file.
+
+        Return dictionary info.
+        &#34;&#34;&#34;
+        if (&#39;software&#39; not in cls.info):
+            path = importlib.resources.path(__package__, &#39;INFO&#39;)
+            if (cls.get[&#39;DEBUG&#39;]):
+                print(f&#34;{&#39;&#39;:2}(d) INFO Type:&#34;)
+                print(f&#34;{&#39;&#39;:4}{type(path)}&#34;)
+            if (isinstance(path, contextlib._GeneratorContextManager)):
+                with importlib.resources.open_binary(__package__, &#39;INFO&#39;) as info:
+                    cls.info[&#39;software&#39;] = json.load(info)
+        return cls.info
+
+    @classmethod
+    def initialize(cls):
+        &#34;&#34;&#34;
+        Get info and load settings if applicable.
+        &#34;&#34;&#34;
+        cls.load_settings()
+        cls.get_info()
+
+        if (cls.get[&#39;DEBUG&#39;]):
+            print(f&#34;{&#39;&#39;:2}(d) Settings:&#34;)
+            print(f&#34;{&#39;&#39;:4}{cls.get}&#34;)
+            print(f&#34;{&#39;&#39;:2}(d) Settings.info:&#34;)
+            print(f&#34;{&#39;&#39;:4}{cls.info}&#34;)
+            print(f&#34;{&#39;&#39;:2}(d) Settings.__conf_file:&#34;)
+            print(f&#34;{&#39;&#39;:4}{cls.__conf_file}&#34;)
+            print(f&#34;{&#39;&#39;:2}(d) Settings.__conf_file_bak:&#34;)
+            print(f&#34;{&#39;&#39;:4}{cls.__conf_file_bak}&#34;)
 
     @classmethod
     def load_settings(cls):
@@ -262,14 +359,6 @@ class Settings():
                 cls.__load_settings(cls.__conf_file_bak)
             except:
                 pass
-
-        if (cls.get[&#39;DEBUG&#39;]):
-            print(f&#34;{&#39;&#39;:2}(d) Settings:&#34;)
-            print(f&#34;{&#39;&#39;:4}{cls.get}&#34;)
-            print(f&#34;{&#39;&#39;:2}(d) Settings.__conf_file:&#34;)
-            print(f&#34;{&#39;&#39;:4}{cls.__conf_file}&#34;)
-            print(f&#34;{&#39;&#39;:2}(d) Settings.__conf_file_bak:&#34;)
-            print(f&#34;{&#39;&#39;:4}{cls.__conf_file_bak}&#34;)
 
     @classmethod
     def reset_settings(cls):
@@ -349,9 +438,73 @@ class Settings():
 <dd>
 <div class="desc"><p>Dictionary data structure</p></div>
 </dd>
+<dt id="spoofy.settings.Settings.info"><code class="name">var <span class="ident">info</span></code></dt>
+<dd>
+<div class="desc"><p>Dictionary software information</p></div>
+</dd>
+<dt id="spoofy.settings.Settings.sanitize"><code class="name">var <span class="ident">sanitize</span></code></dt>
+<dd>
+<div class="desc"><p>List of characters to sanitize for input</p></div>
+</dd>
 </dl>
 <h3>Static methods</h3>
 <dl>
+<dt id="spoofy.settings.Settings.get_info"><code class="name flex">
+<span>def <span class="ident">get_info</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Fetch info information from INFO file.</p>
+<p>Return dictionary info.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def get_info(cls):
+    &#34;&#34;&#34;
+    Fetch info information from INFO file.
+
+    Return dictionary info.
+    &#34;&#34;&#34;
+    if (&#39;software&#39; not in cls.info):
+        path = importlib.resources.path(__package__, &#39;INFO&#39;)
+        if (cls.get[&#39;DEBUG&#39;]):
+            print(f&#34;{&#39;&#39;:2}(d) INFO Type:&#34;)
+            print(f&#34;{&#39;&#39;:4}{type(path)}&#34;)
+        if (isinstance(path, contextlib._GeneratorContextManager)):
+            with importlib.resources.open_binary(__package__, &#39;INFO&#39;) as info:
+                cls.info[&#39;software&#39;] = json.load(info)
+    return cls.info</code></pre>
+</details>
+</dd>
+<dt id="spoofy.settings.Settings.initialize"><code class="name flex">
+<span>def <span class="ident">initialize</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get info and load settings if applicable.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def initialize(cls):
+    &#34;&#34;&#34;
+    Get info and load settings if applicable.
+    &#34;&#34;&#34;
+    cls.load_settings()
+    cls.get_info()
+
+    if (cls.get[&#39;DEBUG&#39;]):
+        print(f&#34;{&#39;&#39;:2}(d) Settings:&#34;)
+        print(f&#34;{&#39;&#39;:4}{cls.get}&#34;)
+        print(f&#34;{&#39;&#39;:2}(d) Settings.info:&#34;)
+        print(f&#34;{&#39;&#39;:4}{cls.info}&#34;)
+        print(f&#34;{&#39;&#39;:2}(d) Settings.__conf_file:&#34;)
+        print(f&#34;{&#39;&#39;:4}{cls.__conf_file}&#34;)
+        print(f&#34;{&#39;&#39;:2}(d) Settings.__conf_file_bak:&#34;)
+        print(f&#34;{&#39;&#39;:4}{cls.__conf_file_bak}&#34;)</code></pre>
+</details>
+</dd>
 <dt id="spoofy.settings.Settings.load_settings"><code class="name flex">
 <span>def <span class="ident">load_settings</span></span>(<span>)</span>
 </code></dt>
@@ -378,15 +531,7 @@ def load_settings(cls):
         try:
             cls.__load_settings(cls.__conf_file_bak)
         except:
-            pass
-
-    if (cls.get[&#39;DEBUG&#39;]):
-        print(f&#34;{&#39;&#39;:2}(d) Settings:&#34;)
-        print(f&#34;{&#39;&#39;:4}{cls.get}&#34;)
-        print(f&#34;{&#39;&#39;:2}(d) Settings.__conf_file:&#34;)
-        print(f&#34;{&#39;&#39;:4}{cls.__conf_file}&#34;)
-        print(f&#34;{&#39;&#39;:2}(d) Settings.__conf_file_bak:&#34;)
-        print(f&#34;{&#39;&#39;:4}{cls.__conf_file_bak}&#34;)</code></pre>
+            pass</code></pre>
 </details>
 </dd>
 <dt id="spoofy.settings.Settings.reset_settings"><code class="name flex">
@@ -544,8 +689,12 @@ def toggle_safe_mode(cls):
 <ul class="two-column">
 <li><code><a title="spoofy.settings.Settings.commands" href="#spoofy.settings.Settings.commands">commands</a></code></li>
 <li><code><a title="spoofy.settings.Settings.get" href="#spoofy.settings.Settings.get">get</a></code></li>
+<li><code><a title="spoofy.settings.Settings.get_info" href="#spoofy.settings.Settings.get_info">get_info</a></code></li>
+<li><code><a title="spoofy.settings.Settings.info" href="#spoofy.settings.Settings.info">info</a></code></li>
+<li><code><a title="spoofy.settings.Settings.initialize" href="#spoofy.settings.Settings.initialize">initialize</a></code></li>
 <li><code><a title="spoofy.settings.Settings.load_settings" href="#spoofy.settings.Settings.load_settings">load_settings</a></code></li>
 <li><code><a title="spoofy.settings.Settings.reset_settings" href="#spoofy.settings.Settings.reset_settings">reset_settings</a></code></li>
+<li><code><a title="spoofy.settings.Settings.sanitize" href="#spoofy.settings.Settings.sanitize">sanitize</a></code></li>
 <li><code><a title="spoofy.settings.Settings.save_settings" href="#spoofy.settings.Settings.save_settings">save_settings</a></code></li>
 <li><code><a title="spoofy.settings.Settings.set_delay" href="#spoofy.settings.Settings.set_delay">set_delay</a></code></li>
 <li><code><a title="spoofy.settings.Settings.set_wait_duration" href="#spoofy.settings.Settings.set_wait_duration">set_wait_duration</a></code></li>
