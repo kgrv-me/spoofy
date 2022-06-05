@@ -28,31 +28,10 @@
 </summary>
 <pre><code class="python">#!/usr/bin/env python3
 
-from spoofy.signals import Signal
-from spoofy.ui import CLI
-from spoofy.utilities import check_requirements, trace_exception
-
-def main():
-    &#34;&#34;&#34;
-    Run package with CLI as main.
-    &#34;&#34;&#34;
-    try:
-        # Initialize signal handling
-        Signal.handlers()
-
-        # Check requirements to run
-        check_requirements()
-
-        # Run UI
-        CLI.run()
-    except EOFError:
-        CLI.terminate()
-    except:
-        CLI.terminate()
-        trace_exception()
+from spoofy import CLI
 
 if __name__ == &#39;__main__&#39;:
-    main()</code></pre>
+    CLI.run()</code></pre>
 </details>
 </section>
 <section>
@@ -60,38 +39,6 @@ if __name__ == &#39;__main__&#39;:
 <section>
 </section>
 <section>
-<h2 class="section-title" id="header-functions">Functions</h2>
-<dl>
-<dt id="spoofy.__main__.main"><code class="name flex">
-<span>def <span class="ident">main</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Run package with CLI as main.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def main():
-    &#34;&#34;&#34;
-    Run package with CLI as main.
-    &#34;&#34;&#34;
-    try:
-        # Initialize signal handling
-        Signal.handlers()
-
-        # Check requirements to run
-        check_requirements()
-
-        # Run UI
-        CLI.run()
-    except EOFError:
-        CLI.terminate()
-    except:
-        CLI.terminate()
-        trace_exception()</code></pre>
-</details>
-</dd>
-</dl>
 </section>
 <section>
 </section>
@@ -105,11 +52,6 @@ if __name__ == &#39;__main__&#39;:
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="spoofy" href="index.html">spoofy</a></code></li>
-</ul>
-</li>
-<li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
-<li><code><a title="spoofy.__main__.main" href="#spoofy.__main__.main">main</a></code></li>
 </ul>
 </li>
 </ul>

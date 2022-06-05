@@ -32,7 +32,7 @@ If applicable, add screenshots to help explain your problem.
 #### Run Method
 - [x] Standalone
 - [ ] Python Module
-  - Commit: [e.g. `dc9b8765741dbde565e1491f42c231f3bcc000a0`]
+  - Commit: [e.g. `c533691`]
 
 #### Snippet
 - Enter `i` in main menu to display relevant information

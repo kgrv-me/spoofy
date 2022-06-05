@@ -11,26 +11,38 @@ class Settings():
     """
     __conf_file = str(PurePath(get_path('data'), 'settings.json'))
     __conf_file_bak = None
-    __get = {
-        'DEBUG': False,
-        'DELAY': 0.3, # 0.3 is the minimum for CLI to work properly
-        'SAFE_MODE': False,
-        'WAIT_DURATION': 0 # 16 is the minimum for GoT:Legends splitting (for me)
-    }
-    __minimum_delay = 0.3
+    __get = {}
+    __minimum_delay = 0.1
+    __minimum_timeout = 0.3 # 0.3 is the minimum for active host to respond
 
     #: Dictionary of valid commands lists
     commands = {
+        # Global commands
         'back': ['b', 'back', 'o', 'out'],
         'quit': ['e', 'exit', 'q', 'quit'],
+
+        # Menu selection
         'info': ['i', 'info', 'information'],
         'license': ['l', 'license'],
         'settings': ['s', 'setting', 'settings'],
+
+        # Spoof commands
         'kill': ['k', 'kill'],
-        'revive': ['r', 'revive', 'u', 'unkill', 'un-kill']
+        'revive': ['r', 'revive', 'u', 'unkill', 'un-kill'],
+        'stop': ['s', 'stop'],
+
+        # Special commands
+        'specials': ['!debug', '!!delay', '!!reset', '!safe-mode', '!!scan', '!!settings', '!!timeout', '!!wait']
     }
     #: Dictionary data structure
-    get = {}
+    get = {
+        'DEBUG': False,
+        'DELAY': 0.1,
+        'SAFE_MODE': False,
+        'TIMEOUT': 0.5,
+        'WAIT_DURATION': 0
+        # 16 is the minimum for GoT:Legends splitting (for me)
+    }
     #: Dictionary software information
     info = {
         'system': {'ARCH': machine(), 'PLATFORM': platform(), 'PYTHON': python_version()}
@@ -59,6 +71,8 @@ class Settings():
             cls.get = json.load(cfg)
         if (cls.get['DELAY'] < cls.__minimum_delay):
             cls.get['DELAY'] = cls.__minimum_delay
+        if (cls.get['TIMEOUT'] < cls.__minimum_timeout):
+            cls.get['TIMEOUT'] = cls.__minimum_timeout
 
     @classmethod
     def __save_settings(cls, path):
@@ -72,46 +86,36 @@ class Settings():
             cfg.write(json.dumps(cls.get))
 
     @classmethod
-    def get_info(cls):
-        """
-        Fetch info information from INFO file.
-
-        Return dictionary info.
-        """
-        if ('software' not in cls.info):
-            path = importlib.resources.path(__package__, 'INFO')
-            if (cls.get['DEBUG']):
-                print(f"{'':2}(d) INFO Type:")
-                print(f"{'':4}{type(path)}")
-            if (isinstance(path, contextlib._GeneratorContextManager)):
-                with importlib.resources.open_binary(__package__, 'INFO') as info:
-                    cls.info['software'] = json.load(info)
-        return cls.info
-
-    @classmethod
     def initialize(cls):
         """
         Get info and load settings if applicable.
         """
         cls.load_settings()
-        cls.get_info()
+        cls.load_info()
+        cls.print_debug()
 
-        if (cls.get['DEBUG']):
-            print(f"{'':2}(d) Settings:")
-            print(f"{'':4}{cls.get}")
-            print(f"{'':2}(d) Settings.info:")
-            print(f"{'':4}{cls.info}")
-            print(f"{'':2}(d) Settings.__conf_file:")
-            print(f"{'':4}{cls.__conf_file}")
-            print(f"{'':2}(d) Settings.__conf_file_bak:")
-            print(f"{'':4}{cls.__conf_file_bak}")
+    @classmethod
+    def load_info(cls):
+        """
+        Load info information from INFO file.
+        """
+        try:
+            path = importlib.resources.path(__package__, 'INFO')
+            if (cls.get['DEBUG']):
+                print(f"{'':2}(d) INFO Type")
+                print(f"{'':4}{type(path)}")
+            if (isinstance(path, contextlib._GeneratorContextManager)):
+                with importlib.resources.open_binary(__package__, 'INFO') as info:
+                    cls.info['software'] = json.load(info)
+        except:
+            pass
 
     @classmethod
     def load_settings(cls):
         """
         Load settings from file if exists.
         """
-        cls.get = cls.__get
+        cls.__get = dict(cls.get)
 
         # Configure backup path for persistent settings
         loader_resource = __loader__.get_resource_reader(__name__)
@@ -126,11 +130,29 @@ class Settings():
                 pass
 
     @classmethod
+    def print_debug(cls, debug=False):
+        """
+        Print debug information if in debug mode.
+
+        Parameter:
+            debug -- (bool/False) overwrite DEBUG setting
+        """
+        if (debug or cls.get['DEBUG']):
+            print(f"{'':2}(d) Settings.get")
+            print(f"{'':4}{cls.get}")
+            print(f"{'':2}(d) Settings.info")
+            print(f"{'':4}{cls.info}")
+            print(f"{'':2}(d) Settings.__conf_file")
+            print(f"{'':4}{cls.__conf_file}")
+            print(f"{'':2}(d) Settings.__conf_file_bak")
+            print(f"{'':4}{cls.__conf_file_bak}")
+
+    @classmethod
     def reset_settings(cls):
         """
         Reset settings to default configuration and save.
         """
-        cls.get = cls.__get
+        cls.get = dict(cls.__get)
         cls.save_settings()
 
     @classmethod
@@ -152,16 +174,31 @@ class Settings():
         Set 'DELAY' in float seconds.
 
         Parameter:
-            seconds -- (float, string) amount of seconds
+            seconds -- (float) amount of seconds
         """
-        if (not seconds.replace('.', '').isdecimal()):
-            print(f"{'':2}Invalid 'SECONDS' for 'DELAY'!")
-        elif (float(seconds) < cls.__minimum_delay):
-            print(f"{'':2}'DELAY' needs to be greater than '0.3' seconds!")
-        else:
-            cls.get['DELAY'] = float(seconds)
-            print(f"{'':2}'DELAY' is now '{cls.get['DELAY']}'")
-            cls.save_settings()
+        if (seconds < cls.__minimum_delay):
+            print(f"{'':2}(w) 'DELAY' needs to be at least '{cls.__minimum_delay}' seconds!")
+            seconds = cls.__minimum_delay
+
+        cls.get['DELAY'] = seconds
+        print(f"{'':2}'DELAY' is now '{cls.get['DELAY']}'")
+        cls.save_settings()
+
+    @classmethod
+    def set_timeout(cls, seconds):
+        """
+        Set 'TIMEOUT' in float seconds.
+
+        Parameter:
+            seconds -- (float) amount of seconds
+        """
+        if (seconds < cls.__minimum_timeout):
+            print(f"{'':2}(w) 'TIMEOUT' needs to be at least '{cls.__minimum_timeout}' seconds!")
+            seconds = cls.__minimum_timeout
+
+        cls.get['TIMEOUT'] = seconds
+        print(f"{'':2}'TIMEOUT' is now '{cls.get['TIMEOUT']}'")
+        cls.save_settings()
 
     @classmethod
     def set_wait_duration(cls, seconds):

@@ -1,5 +1,5 @@
+from .settings import Settings
 from sys import exc_info
-from threading import Thread
 from traceback import format_exception
 import ctypes, os
 
@@ -50,8 +50,21 @@ def exit_(code):
         code -- (int) exit code
     """
     if (code != 0):
-        input("Press 'Enter' to continue...")
+        input("Press 'Enter' to continue... ")
     os._exit(code)
+
+def input_(msg):
+    """
+    Return processed user input.
+    """
+    cmd = input(msg).strip().lower()
+    for char in Settings.sanitize:
+        cmd = cmd.replace(char, '')
+
+    if (Settings.get['DEBUG']):
+        print(f"{'':2}(d) repr(cmd): {repr(cmd)}")
+
+    return cmd
 
 def trace_exception(code=1):
     """
@@ -69,18 +82,3 @@ def trace_exception(code=1):
     print(f"{'':2}Unexpected error! Consider reporting via https://github.com/kgrv-me/spoofy/issues/new")
     print()
     exit_(code)
-
-def threaded(fn):
-    """
-    Thread method for decorator.
-    """
-    def run(*args, **kwargs):
-        """
-        Run method in thread to avoid blocking.
-
-        Intended for Network.kill() and Network.revive().
-        """
-        thread = Thread(target=fn, args=args, kwargs=kwargs)
-        thread.start()
-        return thread
-    return run

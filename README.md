@@ -1,4 +1,4 @@
-A cross-platform CLI Python package for spoofing! *Inspired by [`elmoCut`](https://github.com/elmoiv/elmocut)*
+A cross-platform CLI Python package for ARP spoofing! *Inspired by [`elmoCut`](https://github.com/elmoiv/elmocut)*
 
 [REQUIREMENT](#requirement) - [OS/ARCH](#osarch) - [USAGE](#usage) ( [Run as Standalone](#run-as-standalone) | [Run as Python Module](#run-as-python-module) | [CLI](#cli) ) - [CHANGELOG](#changelog)
 
@@ -116,6 +116,8 @@ It will scan network for local hosts automatically
 ~ sudo ./Spoofy-macOS-ARM64
 
 Welcome to 'Spoofy'!
+A cross-platform CLI Python package for ARP spoofing!
+
 Scanning network for hosts...
 
   0) 192.168.1.1  |  aa:bb:cc:dd:ee:ff  |  Intel
@@ -135,9 +137,6 @@ Enter `i` in main menu to display relevant information
   Refer to embedded 'README.md' for documentation
   or visit https://github.com/kgrv-me/spoofy/blob/main/README.md
 
-  Repository
-    https://github.com/kgrv-me/spoofy
-
   Software
     Python 3.10.4
     Spoofy-macOS-ARM64 v1.0-rc
@@ -150,10 +149,15 @@ Press 'Enter' to go back... _
 
 #### Settings
 Enter `s` as input for configurable settings
+
+- Enter `b`, `back` to go back
+  - Press 'Enter' while empty works as well
+- Enter `e`, `exit`, `q`, `quit` to quit program
 ```
   n) Network scan for local hosts
   r) Reset settings configuration
   s) Toggle 'SAFE_MODE' for spoofing (Current: False)
+  t) Set 'TIMEOUT' for ARP requests (Current: 0.1)
   w) Set 'WAIT_DURATION' to enable auto-revive (Current: 0)
 
 Select setting to configure (b to go back): _
@@ -165,6 +169,32 @@ Select setting to configure (b to go back): _
   ..
   - settings.json
   - Spoofy-macOS-ARM64
+```
+
+#### Special Commands
+Can be entered on both main and settings menu
+| Settings | Commands     | Description |
+| :------: | :----------: | ----------- |
+| `n`      | `!!scan`     | Network scan for local hosts |
+| `r`      | `!!reset`    | Reset settings configuration |
+| `s`      | `!safe-mode` | Toggle 'SAFE_MODE' for spoofing |
+| `t`      | `!!timeout`  | Set 'TIMEOUT' for ARP requests |
+| `w`      | `!!wait`     | Set 'WAIT_DURATION' to enable auto-revive |
+
+#### Why I don't see any hosts?
+`Spoofy` only picks up active hosts that responded to ARP requests
+
+*Try increase 'TIMEOUT' interval for ARP requests*
+```
+  n) Network scan for local hosts
+  r) Reset settings configuration
+  s) Toggle 'SAFE_MODE' for spoofing (Current: True)
+  t) Set 'TIMEOUT' for ARP requests (Current: 0.1)
+  w) Set 'WAIT_DURATION' to enable auto-revive (Current: 0.0)
+
+Select setting to configure (b to go back): t
+Enter 'TIMEOUT' interval (in seconds): 1
+  'TIMEOUT' is now '1.0'
 ```
 
 #### Safe Mode
@@ -186,13 +216,15 @@ Select device to disconnect (q to quit): ~ SAFE_MODE ~ _
 #### Spoofing (Default)
 Once selected, `Spoofy` will poison ARP cache until stopped
 
-*Press 'Enter' to toggle between KILL and REVIVE*
+- Press 'Enter' to toggle between KILL and REVIVE
+- Enter `b`, `back`, `s`, `stop` to go back to main menu
+- Enter `e`, `exit`, `q`, `quit` to quit program
 ```
 Select device to disconnect (q to quit): 2
   '11:22:33:44:55:66 - CloudNet' is killed
 
 Press 'Enter' to revive 'CloudNet' (b to go back): 
-  '11:22:33:44:55:66 - CloudNet' is revived
+  '11:22:33:44:55:66 - CloudNet' is revived (0.582s)
 
 Press 'Enter' to spoofy 'CloudNet' (b to go back): _
 ```
@@ -206,7 +238,7 @@ or auto-revive by setting 'WAIT_DURATION'
   w) Set 'WAIT_DURATION' to enable auto-revive (Current: 0)
 
 Select setting to configure (b to go back): w
-Enter duration (in seconds): 16
+Enter 'WAIT_DURATION' interval (in seconds): 16
   'WAIT_DURATION' is now '16.0'
 ```
 
@@ -214,7 +246,7 @@ Enter duration (in seconds): 16
 ```
 Select device to temporary disconnect (q to quit): 2
   '11:22:33:44:55:66 - CloudNet' is killed
-  '11:22:33:44:55:66 - CloudNet' is revived
+  '11:22:33:44:55:66 - CloudNet' is revived (16.153s)
 
 Press 'Enter' to spoof 'CloudNet' again (b to go back): _
 ```
@@ -224,7 +256,7 @@ Press 'Enter' to spoof 'CloudNet' again (b to go back): _
 ```
 Press 'Enter' to revive 'CloudNet' (b to go back): q
 Resetting spoofed hosts...
-  '11:22:33:44:55:66 - CloudNet' is revived
+  '11:22:33:44:55:66 - CloudNet' is revived (1.350s)
 ```
 
 `CTRL-C`
@@ -234,7 +266,7 @@ Press 'Enter' to revive 'CloudNet' (b to go back): ^C
 Terminating due to SIGNAL:2
 Initiate cleanup process... DO NOT interrupt!
 Resetting spoofed hosts...
-  '11:22:33:44:55:66 - CloudNet' is revived
+  '11:22:33:44:55:66 - CloudNet' is revived (0.758s)
 ```
 
 `CTRL-D`
@@ -243,7 +275,7 @@ Press 'Enter' to revive 'CloudNet' (b to go back): ^D
 
 Initiate cleanup process... DO NOT interrupt!
 Resetting spoofed hosts...
-  '11:22:33:44:55:66 - CloudNet' is revived
+  '11:22:33:44:55:66 - CloudNet' is revived (0.801s)
 ```
 
 `CTRL-Z`
@@ -253,11 +285,63 @@ Press 'Enter' to revive 'CloudNet' (b to go back): ^Z
 Terminating due to SIGNAL:18
 Initiate cleanup process... DO NOT interrupt!
 Resetting spoofed hosts...
-  '11:22:33:44:55:66 - CloudNet' is revived
+  '11:22:33:44:55:66 - CloudNet' is revived (1.230s)
 ```
 
 ## CHANGELOG
 ### 2022-06-05
+#### v2.0
+```
+Added
+- 'CLI'
+    - 'process_duration_input()' to process input for setting intervals
+    - 'process_host_selection()' to process user input for host selection
+    - 'process_special_cmd()' to process special commands on main/settings
+    - TIMEOUT configuration in settings menu
+- spoofed duration when un-spoofed
+- 'Network.get_host_by_ip()' to fetch host with associated IP
+- 'Settings.print_debug()' for debugging
+
+Changed
+- 'Network.get' back to use MAC addresses for hosts keys
+- 'Settings.get_info()' to 'Settings.load_info()'
+- threading to better and safer implementation
+
+Fixed
+- 'Network.cleanup()' not properly reset packets
+
+Moved
+- '__main__.main()' into 'CLI.run()' for better package organization
+- 'CLI'
+    - 'input_()' to 'utilities.input_()' for broader application
+    - 'terminate()' to 'Signal.terminate()'
+- previous 'Signal.terminate()' to 'Signal.__terminate()'
+
+Removed
+- 'utilities.threaded()' method
+
+Updated
+- '__init__.py' to collect all modules for ease of import
+- 'CLI'
+    - cleaner code structure
+    - drop-in replacement of 'input()' with 'utilities.input_()'
+    - much snappier experience for UI, UX
+    - stay in settings menu until back, quit, or network scan
+    - support new 'Network.get' keys
+    - utilize 'Signal.terminate()' for 'CLI.terminate()'
+- 'Network'
+    - 'get_hosts()' to utilize 'TIMEOUT' setting
+    - 'kill()' to start thread '__kill()' if host is alive
+    - 'revive()' to wait for '__kill()' thread to terminate before resetting
+    - safe data integrity when network re-scan
+    - support new multithread implementation
+- 'Settings'
+    - new minimum value for 'DELAY'
+    - safe configuration reset
+    - 'set_delay()' to proper integrate by 'CLI' with minimum value check
+    - support special commands and 'TIMEOUT' configuration
+```
+
 #### v1.0
 ```
 Added
@@ -313,7 +397,7 @@ Updated
 ```
 
 ### 2022-06-02
-#### v0.4-rc
+#### v0.4-beta
 ```
 Added
 - adaptive spacing for hosts IP addresses list
@@ -325,8 +409,10 @@ Added
 
 Changed
 - default spoofing mode to manual
-- 'Network.unkill()' to 'Network.revive()'
-- 'Network.kill()', 'Network.revive()', 'Network.spoof()' argument to support sorted hosts
+- 'Network'
+    - 'get_hosts()' to support sorted IP with IP as keys
+    - 'unkill()' to 'revive()'
+    - 'kill()', 'revive()', 'spoof()' argument to support sorted hosts
 - 'SAFE_MODE' indicator to be inline input prompt
 
 Improved
@@ -340,7 +426,7 @@ Updated
 ```
 
 ### 2022-06-01
-#### v0.3-rc
+#### v0.3-beta
 ```
 Added
 - manual toggle mode by setting 'WAIT_DURATION' to 0

@@ -18,6 +18,8 @@ Refer to [README.md](https://github.com/kgrv-me/spoofy/blob/main/README.md) for 
 - [CLI](https://github.com/kgrv-me/spoofy#cli)
   - [About Information](https://github.com/kgrv-me/spoofy#about-information)
   - [Settings](https://github.com/kgrv-me/spoofy#settings)
+  - [Special Commands](https://github.com/kgrv-me/spoofy#special-commands)
+  - [Why I don't see any hosts?](https://github.com/kgrv-me/spoofy#why-i-dont-see-any-hosts)
   - [Safe Mode](https://github.com/kgrv-me/spoofy#safe-mode)
   - [Spoofing (Default)](https://github.com/kgrv-me/spoofy#spoofing-default)
   - [Spoofing (Automatically)](https://github.com/kgrv-me/spoofy#spoofing-automatically)

@@ -26,7 +26,7 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from .ui import CLI
+<pre><code class="python">from .network import Network
 from .utilities import exit_
 from signal import *
 import os
@@ -36,30 +36,46 @@ class Signal():
     Signal class to handle system signals.
     &#34;&#34;&#34;
     @classmethod
-    def handlers(cls):
-        &#34;&#34;&#34;
-        Initialize signal handlers to allow graceful termination.
-        &#34;&#34;&#34;
-        # Abort signal from abort(3)
-        signal(SIGABRT, cls.terminate)
-        # Keyboard interruption
-        signal(SIGINT, cls.terminate)
-        # Terminate signal
-        signal(SIGTERM, cls.terminate)
-        if (os.name != &#39;nt&#39;):
-            # Stop signal
-            signal(SIGTSTP, cls.terminate)
-
-    @classmethod
-    def terminate(cls, signum, frame):
+    def __terminate(cls, signum, frame):
         &#34;&#34;&#34;
         Handle catched signal.
         &#34;&#34;&#34;
         print()
         print()
         print(f&#34;Terminating due to SIGNAL:{signum}&#34;)
-        CLI.terminate(space=False)
-        exit_(0)</code></pre>
+        cls.terminate(space=False)
+        exit_(0)
+
+    @classmethod
+    def handlers(cls):
+        &#34;&#34;&#34;
+        Initialize signal handlers to allow graceful termination.
+        &#34;&#34;&#34;
+        # Abort signal from abort(3)
+        signal(SIGABRT, cls.__terminate)
+        # Keyboard interruption
+        signal(SIGINT, cls.__terminate)
+        # Terminate signal
+        signal(SIGTERM, cls.__terminate)
+        if (os.name != &#39;nt&#39;):
+            # Stop signal
+            signal(SIGTSTP, cls.__terminate)
+
+    @classmethod
+    def terminate(cls, space=True):
+        &#34;&#34;&#34;
+        Invoke in case of interruption to properly terminate.
+
+        Parameter:
+            space -- (bool/True) pad 2 extra newlines before the message
+        &#34;&#34;&#34;
+        if (Network.get_killed() &gt; 0):
+            if (space):
+                print()
+                print()
+            print(&#34;Initiate cleanup process... DO NOT interrupt!&#34;)
+        Network.cleanup()
+        print()</code></pre>
 </details>
 </section>
 <section>
@@ -85,30 +101,46 @@ class Signal():
     Signal class to handle system signals.
     &#34;&#34;&#34;
     @classmethod
-    def handlers(cls):
-        &#34;&#34;&#34;
-        Initialize signal handlers to allow graceful termination.
-        &#34;&#34;&#34;
-        # Abort signal from abort(3)
-        signal(SIGABRT, cls.terminate)
-        # Keyboard interruption
-        signal(SIGINT, cls.terminate)
-        # Terminate signal
-        signal(SIGTERM, cls.terminate)
-        if (os.name != &#39;nt&#39;):
-            # Stop signal
-            signal(SIGTSTP, cls.terminate)
-
-    @classmethod
-    def terminate(cls, signum, frame):
+    def __terminate(cls, signum, frame):
         &#34;&#34;&#34;
         Handle catched signal.
         &#34;&#34;&#34;
         print()
         print()
         print(f&#34;Terminating due to SIGNAL:{signum}&#34;)
-        CLI.terminate(space=False)
-        exit_(0)</code></pre>
+        cls.terminate(space=False)
+        exit_(0)
+
+    @classmethod
+    def handlers(cls):
+        &#34;&#34;&#34;
+        Initialize signal handlers to allow graceful termination.
+        &#34;&#34;&#34;
+        # Abort signal from abort(3)
+        signal(SIGABRT, cls.__terminate)
+        # Keyboard interruption
+        signal(SIGINT, cls.__terminate)
+        # Terminate signal
+        signal(SIGTERM, cls.__terminate)
+        if (os.name != &#39;nt&#39;):
+            # Stop signal
+            signal(SIGTSTP, cls.__terminate)
+
+    @classmethod
+    def terminate(cls, space=True):
+        &#34;&#34;&#34;
+        Invoke in case of interruption to properly terminate.
+
+        Parameter:
+            space -- (bool/True) pad 2 extra newlines before the message
+        &#34;&#34;&#34;
+        if (Network.get_killed() &gt; 0):
+            if (space):
+                print()
+                print()
+            print(&#34;Initiate cleanup process... DO NOT interrupt!&#34;)
+        Network.cleanup()
+        print()</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
@@ -127,35 +159,42 @@ def handlers(cls):
     Initialize signal handlers to allow graceful termination.
     &#34;&#34;&#34;
     # Abort signal from abort(3)
-    signal(SIGABRT, cls.terminate)
+    signal(SIGABRT, cls.__terminate)
     # Keyboard interruption
-    signal(SIGINT, cls.terminate)
+    signal(SIGINT, cls.__terminate)
     # Terminate signal
-    signal(SIGTERM, cls.terminate)
+    signal(SIGTERM, cls.__terminate)
     if (os.name != &#39;nt&#39;):
         # Stop signal
-        signal(SIGTSTP, cls.terminate)</code></pre>
+        signal(SIGTSTP, cls.__terminate)</code></pre>
 </details>
 </dd>
 <dt id="spoofy.signals.Signal.terminate"><code class="name flex">
-<span>def <span class="ident">terminate</span></span>(<span>signum, frame)</span>
+<span>def <span class="ident">terminate</span></span>(<span>space=True)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Handle catched signal.</p></div>
+<div class="desc"><p>Invoke in case of interruption to properly terminate.</p>
+<h2 id="parameter">Parameter</h2>
+<p>space &ndash; (bool/True) pad 2 extra newlines before the message</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def terminate(cls, signum, frame):
+def terminate(cls, space=True):
     &#34;&#34;&#34;
-    Handle catched signal.
+    Invoke in case of interruption to properly terminate.
+
+    Parameter:
+        space -- (bool/True) pad 2 extra newlines before the message
     &#34;&#34;&#34;
-    print()
-    print()
-    print(f&#34;Terminating due to SIGNAL:{signum}&#34;)
-    CLI.terminate(space=False)
-    exit_(0)</code></pre>
+    if (Network.get_killed() &gt; 0):
+        if (space):
+            print()
+            print()
+        print(&#34;Initiate cleanup process... DO NOT interrupt!&#34;)
+    Network.cleanup()
+    print()</code></pre>
 </details>
 </dd>
 </dl>

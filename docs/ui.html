@@ -28,7 +28,8 @@
 </summary>
 <pre><code class="python">from .network import Network
 from .settings import Settings
-from time import sleep
+from .signals import Signal
+from .utilities import check_requirements, input_, trace_exception
 
 class CLI():
     &#34;&#34;&#34;
@@ -38,18 +39,68 @@ class CLI():
     cmd = &#39;&#39;
 
     @classmethod
-    def input_(cls, msg):
+    def process_duration_input(cls, fnc, var):
         &#34;&#34;&#34;
-        Return processed user input.
+        Process user input for setting duration.
+
+        Parameter:
+            fnc -- (method) method to run if applicable
+            var -- (string) configuration variable for Settings
+
         &#34;&#34;&#34;
-        cmd = input(msg).strip().lower()
-        for char in Settings.sanitize:
-            cmd = cmd.replace(char, &#39;&#39;)
+        cls.cmd = input_(f&#34;Enter &#39;{var}&#39; interval (in seconds): &#34;)
+        if (cls.cmd.replace(&#39;.&#39;, &#39;&#39;).isdecimal()):
+            fnc(float(cls.cmd))
+        elif (
+            cls.cmd not in Settings.commands[&#39;back&#39;]
+            and cls.cmd not in Settings.commands[&#39;quit&#39;]
+            and cls.cmd != &#39;&#39;
+        ):
+            print(f&#34;{&#39;&#39;:2}(e22) Invalid interval for &#39;{var}&#39;!&#34;)
+        elif (
+            (cls.cmd not in Settings.commands[&#39;back&#39;]
+            or cls.cmd != &#39;&#39;)
+            and cls.cmd not in Settings.commands[&#39;quit&#39;]
+        ):
+            cls.cmd = &#39;settings&#39;
 
-        if (Settings.get[&#39;DEBUG&#39;]):
-            print(f&#34;{&#39;&#39;:2}(d) REPR(CMD): {repr(cmd)}&#34;)
+    @classmethod
+    def process_host_selection(cls, safe_mode):
+        &#34;&#34;&#34;
+        Process user input for host selection to spoof.
 
-        return cmd
+        Parameter:
+            safe_mode -- (string) inline SAFE_MODE indicator
+        &#34;&#34;&#34;
+        index = int(cls.cmd)
+        host = Network.get_host_by_ip(str(Network.get[&#39;ip_list&#39;][index]))
+        while (
+            cls.cmd not in Settings.commands[&#39;back&#39;]
+            and cls.cmd not in Settings.commands[&#39;quit&#39;]
+            and cls.cmd not in Settings.commands[&#39;stop&#39;]
+        ):
+            if (
+                Settings.get[&#39;WAIT_DURATION&#39;] == 0
+                and cls.cmd not in Settings.commands[&#39;revive&#39;]
+            ):
+                Network.kill(host)
+                print()
+                cls.cmd = input_(f&#34;Press &#39;Enter&#39; to revive &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
+                if (cls.cmd == &#39;&#39;):
+                    cls.cmd = &#39;revive&#39;
+            elif (
+                Settings.get[&#39;WAIT_DURATION&#39;] == 0
+                and cls.cmd not in Settings.commands[&#39;kill&#39;]
+            ):
+                Network.revive(host)
+                print()
+                cls.cmd = input_(f&#34;Press &#39;Enter&#39; to spoofy &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
+                if (cls.cmd == &#39;&#39;):
+                    cls.cmd = &#39;kill&#39;
+            else:
+                Network.spoof(host)
+                print()
+                cls.cmd = input_(f&#34;Press &#39;Enter&#39; to spoof &#39;{host[&#39;vendor&#39;]}&#39; again (b to go back):{safe_mode} &#34;)
 
     @classmethod
     def process_info_menu(cls):
@@ -74,7 +125,7 @@ class CLI():
         print(f&#34;{&#39;&#39;:2}System&#34;)
         print(f&#34;{&#39;&#39;:4}{sm[&#39;PLATFORM&#39;]}{arch_info}&#34;)
         print()
-        cls.cmd = cls.input_(&#34;Press &#39;Enter&#39; to go back... &#34;)
+        cls.cmd = input_(&#34;Press &#39;Enter&#39; to go back... &#34;)
 
     @classmethod
     def process_license_menu(cls):
@@ -89,7 +140,7 @@ class CLI():
         print()
         print(f&#34;{&#39;&#39;:2}(Disclaimer) Use this software at your own risk!&#34;)
         print()
-        cls.cmd = cls.input_(&#34;Press &#39;Enter&#39; to go back... &#34;)
+        cls.cmd = input_(&#34;Press &#39;Enter&#39; to go back... &#34;)
 
     @classmethod
     def process_main_menu(cls):
@@ -101,7 +152,7 @@ class CLI():
         # Menu
         print()
         for i, ip in enumerate(Network.get[&#39;ip_list&#39;]):
-            h = Network.get[&#39;hosts&#39;][str(ip)]
+            h = Network.get_host_by_ip(str(ip))
             ip = str(ip).ljust(Network.get[&#39;max_ip_length&#39;])
             print(f&#34;{i:&gt;3}) {ip}  |  {h[&#39;mac&#39;]}  |  {(h[&#39;vendor_tagged&#39;])}&#34;)
         print()
@@ -113,7 +164,7 @@ class CLI():
         # Process commands
         auto_msg = &#39; temporary&#39; if Settings.get[&#39;WAIT_DURATION&#39;] != 0 else &#39;&#39;
         safe_mode = &#39; ~ SAFE_MODE ~&#39; if Settings.get[&#39;SAFE_MODE&#39;] else &#39;&#39;
-        cls.cmd = cls.input_(f&#34;Select device to{auto_msg} disconnect (q to quit):{safe_mode} &#34;)
+        cls.cmd = input_(f&#34;Select device to{auto_msg} disconnect (q to quit):{safe_mode} &#34;)
         if (cls.cmd in Settings.commands[&#39;info&#39;]):
             cls.process_info_menu()
         elif (cls.cmd in Settings.commands[&#39;license&#39;]):
@@ -121,37 +172,9 @@ class CLI():
         elif (cls.cmd in Settings.commands[&#39;settings&#39;]):
             cls.process_settings_menu()
         elif (cls.cmd.isdecimal() and int(cls.cmd) &lt; len(Network.get[&#39;hosts&#39;])):
-            index = int(cls.cmd)
-            host = Network.get[&#39;hosts&#39;][str(Network.get[&#39;ip_list&#39;][index])]
-            while (
-                cls.cmd not in Settings.commands[&#39;back&#39;]
-                and cls.cmd not in Settings.commands[&#39;quit&#39;]
-            ):
-                if (
-                    Settings.get[&#39;WAIT_DURATION&#39;] == 0
-                    and cls.cmd not in Settings.commands[&#39;revive&#39;]
-                ):
-                    Network.kill(host)
-                    sleep(Settings.get[&#39;DELAY&#39;])
-                    print()
-                    cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to revive &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
-                    if (cls.cmd == &#39;&#39;):
-                        cls.cmd = &#39;revive&#39;
-                elif (
-                    Settings.get[&#39;WAIT_DURATION&#39;] == 0
-                    and cls.cmd not in Settings.commands[&#39;kill&#39;]
-                ):
-                    Network.revive(host)
-                    sleep(Settings.get[&#39;DELAY&#39;])
-                    print()
-                    cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to spoofy &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
-                    if (cls.cmd == &#39;&#39;):
-                        cls.cmd = &#39;kill&#39;
-                else:
-                    Network.spoof(host)
-                    sleep(Settings.get[&#39;DELAY&#39;])
-                    print()
-                    cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to spoof &#39;{host[&#39;vendor&#39;]}&#39; again (b to go back):{safe_mode} &#34;)
+            cls.process_host_selection(safe_mode)
+        elif (cls.cmd in Settings.commands[&#39;specials&#39;]):
+            cls.process_special_cmd()
         elif (
             cls.cmd not in Settings.commands[&#39;quit&#39;]
             and cls.cmd != &#39;&#39;
@@ -170,25 +193,24 @@ class CLI():
         print(f&#34;{&#39;n&#39;:&gt;3}) Network scan for local hosts&#34;)
         print(f&#34;{&#39;r&#39;:&gt;3}) Reset settings configuration&#34;)
         print(f&#34;{&#39;s&#39;:&gt;3}) Toggle &#39;SAFE_MODE&#39; for spoofing (Current: {Settings.get[&#39;SAFE_MODE&#39;]})&#34;)
+        print(f&#34;{&#39;t&#39;:&gt;3}) Set &#39;TIMEOUT&#39; for ARP requests (Current: {Settings.get[&#39;TIMEOUT&#39;]})&#34;)
         print(f&#34;{&#39;w&#39;:&gt;3}) Set &#39;WAIT_DURATION&#39; to enable auto-revive (Current: {Settings.get[&#39;WAIT_DURATION&#39;]})&#34;)
         print()
 
         # Process commands
-        cls.cmd = cls.input_(&#34;Select setting to configure (b to go back): &#34;)
+        cls.cmd = input_(&#34;Select setting to configure (b to go back): &#34;)
         if (cls.cmd == &#39;n&#39;):
             Network.initialize()
         elif (cls.cmd == &#39;r&#39;):
             Settings.reset_settings()
         elif (cls.cmd == &#39;s&#39;):
             Settings.toggle_safe_mode()
+        elif (cls.cmd == &#39;t&#39;):
+            cls.process_duration_input(Settings.set_timeout, &#39;TIMEOUT&#39;)
         elif (cls.cmd == &#39;w&#39;):
-            cls.cmd = cls.input_(&#34;Enter duration (in seconds): &#34;)
-            if (cls.cmd.replace(&#39;.&#39;, &#39;&#39;).isdecimal()):
-                Settings.set_wait_duration(float(cls.cmd))
-            else:
-                print(f&#34;{&#39;&#39;:2}(e22) Invalid duration for &#39;WAIT_DURATION&#39;!&#34;)
-        elif (cls.cmd == &#39;!debug&#39;):
-            Settings.toggle_debug_mode()
+            cls.process_duration_input(Settings.set_wait_duration, &#39;WAIT_DURATION&#39;)
+        elif (cls.cmd in Settings.commands[&#39;specials&#39;]):
+            cls.process_special_cmd()
         elif (
             cls.cmd not in Settings.commands[&#39;back&#39;]
             and cls.cmd not in Settings.commands[&#39;quit&#39;]
@@ -196,36 +218,80 @@ class CLI():
         ):
             print(f&#34;{&#39;&#39;:2}(e22) Invalid setting selection!&#34;)
 
+        # Return if empty, quit, back, or network scan command
+        if (
+            cls.cmd in Settings.commands[&#39;back&#39;]
+            or cls.cmd in Settings.commands[&#39;quit&#39;]
+            or cls.cmd == &#39;&#39;
+            or cls.cmd == &#39;n&#39;
+            or cls.cmd == &#39;!!scan&#39;
+        ):
+            return
+
+        # Stay in settings menu
+        cls.process_settings_menu()
+
+    @classmethod
+    def process_special_cmd(cls):
+        &#34;&#34;&#34;
+        Process user input for special commands.
+        &#34;&#34;&#34;
+        if (cls.cmd == &#39;!debug&#39;):
+            Settings.toggle_debug_mode()
+        elif (cls.cmd == &#39;!!delay&#39;):
+            cls.process_duration_input(Settings.set_delay, &#39;DELAY&#39;)
+        elif (cls.cmd == &#39;!!reset&#39;):
+            Settings.reset_settings()
+        elif (cls.cmd == &#39;!safe-mode&#39;):
+            Settings.toggle_safe_mode()
+        elif (cls.cmd == &#39;!!scan&#39;):
+            Network.initialize()
+        elif (cls.cmd == &#39;!!settings&#39;):
+            Settings.print_debug(debug=True)
+        elif (cls.cmd == &#39;!!timeout&#39;):
+            cls.process_duration_input(Settings.set_timeout, &#39;TIMEOUT&#39;)
+        elif (cls.cmd == &#39;!!wait&#39;):
+            cls.process_duration_input(Settings.set_wait_duration, &#39;WAIT_DURATION&#39;)
+
     @classmethod
     def run(cls):
         &#34;&#34;&#34;
         Main method to run this component.
         &#34;&#34;&#34;
-        print()
-        print(&#34;Welcome to &#39;Spoofy&#39;!&#34;)
-        Settings.initialize()
-        Network.initialize()
+        try:
+            # Initialize signal handling
+            Signal.handlers()
 
-        while (cls.cmd not in Settings.commands[&#39;quit&#39;]):
-            cls.process_main_menu()
-        Network.cleanup()
-        print()
+            # Check requirements to run
+            check_requirements()
+
+            print()
+            print(&#34;Welcome to &#39;Spoofy&#39;!&#34;)
+            print(&#34;A cross-platform CLI Python package for ARP spoofing!&#34;)
+            print()
+
+            Settings.initialize()
+            Network.initialize()
+            while (cls.cmd not in Settings.commands[&#39;quit&#39;]):
+                cls.process_main_menu()
+        except EOFError:
+            cls.terminate()
+        except:
+            cls.terminate()
+            trace_exception()
+        else:
+            Network.cleanup()
+            print()
 
     @classmethod
     def terminate(cls, space=True):
         &#34;&#34;&#34;
-        Invoke in case of interruption to properly terminate.
+        Invoke Signal.terminate() if interrupted.
 
         Parameter:
             space -- (bool/True) pad 2 extra newlines before the message
         &#34;&#34;&#34;
-        if (Network.get_killed() &gt; 0):
-            if (space):
-                print()
-                print()
-            print(&#34;Initiate cleanup process... DO NOT interrupt!&#34;)
-        Network.cleanup()
-        print()</code></pre>
+        Signal.terminate(space=space)</code></pre>
 </details>
 </section>
 <section>
@@ -254,18 +320,68 @@ class CLI():
     cmd = &#39;&#39;
 
     @classmethod
-    def input_(cls, msg):
+    def process_duration_input(cls, fnc, var):
         &#34;&#34;&#34;
-        Return processed user input.
+        Process user input for setting duration.
+
+        Parameter:
+            fnc -- (method) method to run if applicable
+            var -- (string) configuration variable for Settings
+
         &#34;&#34;&#34;
-        cmd = input(msg).strip().lower()
-        for char in Settings.sanitize:
-            cmd = cmd.replace(char, &#39;&#39;)
+        cls.cmd = input_(f&#34;Enter &#39;{var}&#39; interval (in seconds): &#34;)
+        if (cls.cmd.replace(&#39;.&#39;, &#39;&#39;).isdecimal()):
+            fnc(float(cls.cmd))
+        elif (
+            cls.cmd not in Settings.commands[&#39;back&#39;]
+            and cls.cmd not in Settings.commands[&#39;quit&#39;]
+            and cls.cmd != &#39;&#39;
+        ):
+            print(f&#34;{&#39;&#39;:2}(e22) Invalid interval for &#39;{var}&#39;!&#34;)
+        elif (
+            (cls.cmd not in Settings.commands[&#39;back&#39;]
+            or cls.cmd != &#39;&#39;)
+            and cls.cmd not in Settings.commands[&#39;quit&#39;]
+        ):
+            cls.cmd = &#39;settings&#39;
 
-        if (Settings.get[&#39;DEBUG&#39;]):
-            print(f&#34;{&#39;&#39;:2}(d) REPR(CMD): {repr(cmd)}&#34;)
+    @classmethod
+    def process_host_selection(cls, safe_mode):
+        &#34;&#34;&#34;
+        Process user input for host selection to spoof.
 
-        return cmd
+        Parameter:
+            safe_mode -- (string) inline SAFE_MODE indicator
+        &#34;&#34;&#34;
+        index = int(cls.cmd)
+        host = Network.get_host_by_ip(str(Network.get[&#39;ip_list&#39;][index]))
+        while (
+            cls.cmd not in Settings.commands[&#39;back&#39;]
+            and cls.cmd not in Settings.commands[&#39;quit&#39;]
+            and cls.cmd not in Settings.commands[&#39;stop&#39;]
+        ):
+            if (
+                Settings.get[&#39;WAIT_DURATION&#39;] == 0
+                and cls.cmd not in Settings.commands[&#39;revive&#39;]
+            ):
+                Network.kill(host)
+                print()
+                cls.cmd = input_(f&#34;Press &#39;Enter&#39; to revive &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
+                if (cls.cmd == &#39;&#39;):
+                    cls.cmd = &#39;revive&#39;
+            elif (
+                Settings.get[&#39;WAIT_DURATION&#39;] == 0
+                and cls.cmd not in Settings.commands[&#39;kill&#39;]
+            ):
+                Network.revive(host)
+                print()
+                cls.cmd = input_(f&#34;Press &#39;Enter&#39; to spoofy &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
+                if (cls.cmd == &#39;&#39;):
+                    cls.cmd = &#39;kill&#39;
+            else:
+                Network.spoof(host)
+                print()
+                cls.cmd = input_(f&#34;Press &#39;Enter&#39; to spoof &#39;{host[&#39;vendor&#39;]}&#39; again (b to go back):{safe_mode} &#34;)
 
     @classmethod
     def process_info_menu(cls):
@@ -290,7 +406,7 @@ class CLI():
         print(f&#34;{&#39;&#39;:2}System&#34;)
         print(f&#34;{&#39;&#39;:4}{sm[&#39;PLATFORM&#39;]}{arch_info}&#34;)
         print()
-        cls.cmd = cls.input_(&#34;Press &#39;Enter&#39; to go back... &#34;)
+        cls.cmd = input_(&#34;Press &#39;Enter&#39; to go back... &#34;)
 
     @classmethod
     def process_license_menu(cls):
@@ -305,7 +421,7 @@ class CLI():
         print()
         print(f&#34;{&#39;&#39;:2}(Disclaimer) Use this software at your own risk!&#34;)
         print()
-        cls.cmd = cls.input_(&#34;Press &#39;Enter&#39; to go back... &#34;)
+        cls.cmd = input_(&#34;Press &#39;Enter&#39; to go back... &#34;)
 
     @classmethod
     def process_main_menu(cls):
@@ -317,7 +433,7 @@ class CLI():
         # Menu
         print()
         for i, ip in enumerate(Network.get[&#39;ip_list&#39;]):
-            h = Network.get[&#39;hosts&#39;][str(ip)]
+            h = Network.get_host_by_ip(str(ip))
             ip = str(ip).ljust(Network.get[&#39;max_ip_length&#39;])
             print(f&#34;{i:&gt;3}) {ip}  |  {h[&#39;mac&#39;]}  |  {(h[&#39;vendor_tagged&#39;])}&#34;)
         print()
@@ -329,7 +445,7 @@ class CLI():
         # Process commands
         auto_msg = &#39; temporary&#39; if Settings.get[&#39;WAIT_DURATION&#39;] != 0 else &#39;&#39;
         safe_mode = &#39; ~ SAFE_MODE ~&#39; if Settings.get[&#39;SAFE_MODE&#39;] else &#39;&#39;
-        cls.cmd = cls.input_(f&#34;Select device to{auto_msg} disconnect (q to quit):{safe_mode} &#34;)
+        cls.cmd = input_(f&#34;Select device to{auto_msg} disconnect (q to quit):{safe_mode} &#34;)
         if (cls.cmd in Settings.commands[&#39;info&#39;]):
             cls.process_info_menu()
         elif (cls.cmd in Settings.commands[&#39;license&#39;]):
@@ -337,37 +453,9 @@ class CLI():
         elif (cls.cmd in Settings.commands[&#39;settings&#39;]):
             cls.process_settings_menu()
         elif (cls.cmd.isdecimal() and int(cls.cmd) &lt; len(Network.get[&#39;hosts&#39;])):
-            index = int(cls.cmd)
-            host = Network.get[&#39;hosts&#39;][str(Network.get[&#39;ip_list&#39;][index])]
-            while (
-                cls.cmd not in Settings.commands[&#39;back&#39;]
-                and cls.cmd not in Settings.commands[&#39;quit&#39;]
-            ):
-                if (
-                    Settings.get[&#39;WAIT_DURATION&#39;] == 0
-                    and cls.cmd not in Settings.commands[&#39;revive&#39;]
-                ):
-                    Network.kill(host)
-                    sleep(Settings.get[&#39;DELAY&#39;])
-                    print()
-                    cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to revive &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
-                    if (cls.cmd == &#39;&#39;):
-                        cls.cmd = &#39;revive&#39;
-                elif (
-                    Settings.get[&#39;WAIT_DURATION&#39;] == 0
-                    and cls.cmd not in Settings.commands[&#39;kill&#39;]
-                ):
-                    Network.revive(host)
-                    sleep(Settings.get[&#39;DELAY&#39;])
-                    print()
-                    cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to spoofy &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
-                    if (cls.cmd == &#39;&#39;):
-                        cls.cmd = &#39;kill&#39;
-                else:
-                    Network.spoof(host)
-                    sleep(Settings.get[&#39;DELAY&#39;])
-                    print()
-                    cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to spoof &#39;{host[&#39;vendor&#39;]}&#39; again (b to go back):{safe_mode} &#34;)
+            cls.process_host_selection(safe_mode)
+        elif (cls.cmd in Settings.commands[&#39;specials&#39;]):
+            cls.process_special_cmd()
         elif (
             cls.cmd not in Settings.commands[&#39;quit&#39;]
             and cls.cmd != &#39;&#39;
@@ -386,25 +474,24 @@ class CLI():
         print(f&#34;{&#39;n&#39;:&gt;3}) Network scan for local hosts&#34;)
         print(f&#34;{&#39;r&#39;:&gt;3}) Reset settings configuration&#34;)
         print(f&#34;{&#39;s&#39;:&gt;3}) Toggle &#39;SAFE_MODE&#39; for spoofing (Current: {Settings.get[&#39;SAFE_MODE&#39;]})&#34;)
+        print(f&#34;{&#39;t&#39;:&gt;3}) Set &#39;TIMEOUT&#39; for ARP requests (Current: {Settings.get[&#39;TIMEOUT&#39;]})&#34;)
         print(f&#34;{&#39;w&#39;:&gt;3}) Set &#39;WAIT_DURATION&#39; to enable auto-revive (Current: {Settings.get[&#39;WAIT_DURATION&#39;]})&#34;)
         print()
 
         # Process commands
-        cls.cmd = cls.input_(&#34;Select setting to configure (b to go back): &#34;)
+        cls.cmd = input_(&#34;Select setting to configure (b to go back): &#34;)
         if (cls.cmd == &#39;n&#39;):
             Network.initialize()
         elif (cls.cmd == &#39;r&#39;):
             Settings.reset_settings()
         elif (cls.cmd == &#39;s&#39;):
             Settings.toggle_safe_mode()
+        elif (cls.cmd == &#39;t&#39;):
+            cls.process_duration_input(Settings.set_timeout, &#39;TIMEOUT&#39;)
         elif (cls.cmd == &#39;w&#39;):
-            cls.cmd = cls.input_(&#34;Enter duration (in seconds): &#34;)
-            if (cls.cmd.replace(&#39;.&#39;, &#39;&#39;).isdecimal()):
-                Settings.set_wait_duration(float(cls.cmd))
-            else:
-                print(f&#34;{&#39;&#39;:2}(e22) Invalid duration for &#39;WAIT_DURATION&#39;!&#34;)
-        elif (cls.cmd == &#39;!debug&#39;):
-            Settings.toggle_debug_mode()
+            cls.process_duration_input(Settings.set_wait_duration, &#39;WAIT_DURATION&#39;)
+        elif (cls.cmd in Settings.commands[&#39;specials&#39;]):
+            cls.process_special_cmd()
         elif (
             cls.cmd not in Settings.commands[&#39;back&#39;]
             and cls.cmd not in Settings.commands[&#39;quit&#39;]
@@ -412,36 +499,80 @@ class CLI():
         ):
             print(f&#34;{&#39;&#39;:2}(e22) Invalid setting selection!&#34;)
 
+        # Return if empty, quit, back, or network scan command
+        if (
+            cls.cmd in Settings.commands[&#39;back&#39;]
+            or cls.cmd in Settings.commands[&#39;quit&#39;]
+            or cls.cmd == &#39;&#39;
+            or cls.cmd == &#39;n&#39;
+            or cls.cmd == &#39;!!scan&#39;
+        ):
+            return
+
+        # Stay in settings menu
+        cls.process_settings_menu()
+
+    @classmethod
+    def process_special_cmd(cls):
+        &#34;&#34;&#34;
+        Process user input for special commands.
+        &#34;&#34;&#34;
+        if (cls.cmd == &#39;!debug&#39;):
+            Settings.toggle_debug_mode()
+        elif (cls.cmd == &#39;!!delay&#39;):
+            cls.process_duration_input(Settings.set_delay, &#39;DELAY&#39;)
+        elif (cls.cmd == &#39;!!reset&#39;):
+            Settings.reset_settings()
+        elif (cls.cmd == &#39;!safe-mode&#39;):
+            Settings.toggle_safe_mode()
+        elif (cls.cmd == &#39;!!scan&#39;):
+            Network.initialize()
+        elif (cls.cmd == &#39;!!settings&#39;):
+            Settings.print_debug(debug=True)
+        elif (cls.cmd == &#39;!!timeout&#39;):
+            cls.process_duration_input(Settings.set_timeout, &#39;TIMEOUT&#39;)
+        elif (cls.cmd == &#39;!!wait&#39;):
+            cls.process_duration_input(Settings.set_wait_duration, &#39;WAIT_DURATION&#39;)
+
     @classmethod
     def run(cls):
         &#34;&#34;&#34;
         Main method to run this component.
         &#34;&#34;&#34;
-        print()
-        print(&#34;Welcome to &#39;Spoofy&#39;!&#34;)
-        Settings.initialize()
-        Network.initialize()
+        try:
+            # Initialize signal handling
+            Signal.handlers()
 
-        while (cls.cmd not in Settings.commands[&#39;quit&#39;]):
-            cls.process_main_menu()
-        Network.cleanup()
-        print()
+            # Check requirements to run
+            check_requirements()
+
+            print()
+            print(&#34;Welcome to &#39;Spoofy&#39;!&#34;)
+            print(&#34;A cross-platform CLI Python package for ARP spoofing!&#34;)
+            print()
+
+            Settings.initialize()
+            Network.initialize()
+            while (cls.cmd not in Settings.commands[&#39;quit&#39;]):
+                cls.process_main_menu()
+        except EOFError:
+            cls.terminate()
+        except:
+            cls.terminate()
+            trace_exception()
+        else:
+            Network.cleanup()
+            print()
 
     @classmethod
     def terminate(cls, space=True):
         &#34;&#34;&#34;
-        Invoke in case of interruption to properly terminate.
+        Invoke Signal.terminate() if interrupted.
 
         Parameter:
             space -- (bool/True) pad 2 extra newlines before the message
         &#34;&#34;&#34;
-        if (Network.get_killed() &gt; 0):
-            if (space):
-                print()
-                print()
-            print(&#34;Initiate cleanup process... DO NOT interrupt!&#34;)
-        Network.cleanup()
-        print()</code></pre>
+        Signal.terminate(space=space)</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
@@ -452,28 +583,93 @@ class CLI():
 </dl>
 <h3>Static methods</h3>
 <dl>
-<dt id="spoofy.ui.CLI.input_"><code class="name flex">
-<span>def <span class="ident">input_</span></span>(<span>msg)</span>
+<dt id="spoofy.ui.CLI.process_duration_input"><code class="name flex">
+<span>def <span class="ident">process_duration_input</span></span>(<span>fnc, var)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Return processed user input.</p></div>
+<div class="desc"><p>Process user input for setting duration.</p>
+<h2 id="parameter">Parameter</h2>
+<p>fnc &ndash; (method) method to run if applicable
+var &ndash; (string) configuration variable for Settings</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def input_(cls, msg):
+def process_duration_input(cls, fnc, var):
     &#34;&#34;&#34;
-    Return processed user input.
+    Process user input for setting duration.
+
+    Parameter:
+        fnc -- (method) method to run if applicable
+        var -- (string) configuration variable for Settings
+
     &#34;&#34;&#34;
-    cmd = input(msg).strip().lower()
-    for char in Settings.sanitize:
-        cmd = cmd.replace(char, &#39;&#39;)
+    cls.cmd = input_(f&#34;Enter &#39;{var}&#39; interval (in seconds): &#34;)
+    if (cls.cmd.replace(&#39;.&#39;, &#39;&#39;).isdecimal()):
+        fnc(float(cls.cmd))
+    elif (
+        cls.cmd not in Settings.commands[&#39;back&#39;]
+        and cls.cmd not in Settings.commands[&#39;quit&#39;]
+        and cls.cmd != &#39;&#39;
+    ):
+        print(f&#34;{&#39;&#39;:2}(e22) Invalid interval for &#39;{var}&#39;!&#34;)
+    elif (
+        (cls.cmd not in Settings.commands[&#39;back&#39;]
+        or cls.cmd != &#39;&#39;)
+        and cls.cmd not in Settings.commands[&#39;quit&#39;]
+    ):
+        cls.cmd = &#39;settings&#39;</code></pre>
+</details>
+</dd>
+<dt id="spoofy.ui.CLI.process_host_selection"><code class="name flex">
+<span>def <span class="ident">process_host_selection</span></span>(<span>safe_mode)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Process user input for host selection to spoof.</p>
+<h2 id="parameter">Parameter</h2>
+<p>safe_mode &ndash; (string) inline SAFE_MODE indicator</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def process_host_selection(cls, safe_mode):
+    &#34;&#34;&#34;
+    Process user input for host selection to spoof.
 
-    if (Settings.get[&#39;DEBUG&#39;]):
-        print(f&#34;{&#39;&#39;:2}(d) REPR(CMD): {repr(cmd)}&#34;)
-
-    return cmd</code></pre>
+    Parameter:
+        safe_mode -- (string) inline SAFE_MODE indicator
+    &#34;&#34;&#34;
+    index = int(cls.cmd)
+    host = Network.get_host_by_ip(str(Network.get[&#39;ip_list&#39;][index]))
+    while (
+        cls.cmd not in Settings.commands[&#39;back&#39;]
+        and cls.cmd not in Settings.commands[&#39;quit&#39;]
+        and cls.cmd not in Settings.commands[&#39;stop&#39;]
+    ):
+        if (
+            Settings.get[&#39;WAIT_DURATION&#39;] == 0
+            and cls.cmd not in Settings.commands[&#39;revive&#39;]
+        ):
+            Network.kill(host)
+            print()
+            cls.cmd = input_(f&#34;Press &#39;Enter&#39; to revive &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
+            if (cls.cmd == &#39;&#39;):
+                cls.cmd = &#39;revive&#39;
+        elif (
+            Settings.get[&#39;WAIT_DURATION&#39;] == 0
+            and cls.cmd not in Settings.commands[&#39;kill&#39;]
+        ):
+            Network.revive(host)
+            print()
+            cls.cmd = input_(f&#34;Press &#39;Enter&#39; to spoofy &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
+            if (cls.cmd == &#39;&#39;):
+                cls.cmd = &#39;kill&#39;
+        else:
+            Network.spoof(host)
+            print()
+            cls.cmd = input_(f&#34;Press &#39;Enter&#39; to spoof &#39;{host[&#39;vendor&#39;]}&#39; again (b to go back):{safe_mode} &#34;)</code></pre>
 </details>
 </dd>
 <dt id="spoofy.ui.CLI.process_info_menu"><code class="name flex">
@@ -508,7 +704,7 @@ def process_info_menu(cls):
     print(f&#34;{&#39;&#39;:2}System&#34;)
     print(f&#34;{&#39;&#39;:4}{sm[&#39;PLATFORM&#39;]}{arch_info}&#34;)
     print()
-    cls.cmd = cls.input_(&#34;Press &#39;Enter&#39; to go back... &#34;)</code></pre>
+    cls.cmd = input_(&#34;Press &#39;Enter&#39; to go back... &#34;)</code></pre>
 </details>
 </dd>
 <dt id="spoofy.ui.CLI.process_license_menu"><code class="name flex">
@@ -533,7 +729,7 @@ def process_license_menu(cls):
     print()
     print(f&#34;{&#39;&#39;:2}(Disclaimer) Use this software at your own risk!&#34;)
     print()
-    cls.cmd = cls.input_(&#34;Press &#39;Enter&#39; to go back... &#34;)</code></pre>
+    cls.cmd = input_(&#34;Press &#39;Enter&#39; to go back... &#34;)</code></pre>
 </details>
 </dd>
 <dt id="spoofy.ui.CLI.process_main_menu"><code class="name flex">
@@ -556,7 +752,7 @@ def process_main_menu(cls):
     # Menu
     print()
     for i, ip in enumerate(Network.get[&#39;ip_list&#39;]):
-        h = Network.get[&#39;hosts&#39;][str(ip)]
+        h = Network.get_host_by_ip(str(ip))
         ip = str(ip).ljust(Network.get[&#39;max_ip_length&#39;])
         print(f&#34;{i:&gt;3}) {ip}  |  {h[&#39;mac&#39;]}  |  {(h[&#39;vendor_tagged&#39;])}&#34;)
     print()
@@ -568,7 +764,7 @@ def process_main_menu(cls):
     # Process commands
     auto_msg = &#39; temporary&#39; if Settings.get[&#39;WAIT_DURATION&#39;] != 0 else &#39;&#39;
     safe_mode = &#39; ~ SAFE_MODE ~&#39; if Settings.get[&#39;SAFE_MODE&#39;] else &#39;&#39;
-    cls.cmd = cls.input_(f&#34;Select device to{auto_msg} disconnect (q to quit):{safe_mode} &#34;)
+    cls.cmd = input_(f&#34;Select device to{auto_msg} disconnect (q to quit):{safe_mode} &#34;)
     if (cls.cmd in Settings.commands[&#39;info&#39;]):
         cls.process_info_menu()
     elif (cls.cmd in Settings.commands[&#39;license&#39;]):
@@ -576,37 +772,9 @@ def process_main_menu(cls):
     elif (cls.cmd in Settings.commands[&#39;settings&#39;]):
         cls.process_settings_menu()
     elif (cls.cmd.isdecimal() and int(cls.cmd) &lt; len(Network.get[&#39;hosts&#39;])):
-        index = int(cls.cmd)
-        host = Network.get[&#39;hosts&#39;][str(Network.get[&#39;ip_list&#39;][index])]
-        while (
-            cls.cmd not in Settings.commands[&#39;back&#39;]
-            and cls.cmd not in Settings.commands[&#39;quit&#39;]
-        ):
-            if (
-                Settings.get[&#39;WAIT_DURATION&#39;] == 0
-                and cls.cmd not in Settings.commands[&#39;revive&#39;]
-            ):
-                Network.kill(host)
-                sleep(Settings.get[&#39;DELAY&#39;])
-                print()
-                cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to revive &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
-                if (cls.cmd == &#39;&#39;):
-                    cls.cmd = &#39;revive&#39;
-            elif (
-                Settings.get[&#39;WAIT_DURATION&#39;] == 0
-                and cls.cmd not in Settings.commands[&#39;kill&#39;]
-            ):
-                Network.revive(host)
-                sleep(Settings.get[&#39;DELAY&#39;])
-                print()
-                cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to spoofy &#39;{host[&#39;vendor&#39;]}&#39; (b to go back):{safe_mode} &#34;)
-                if (cls.cmd == &#39;&#39;):
-                    cls.cmd = &#39;kill&#39;
-            else:
-                Network.spoof(host)
-                sleep(Settings.get[&#39;DELAY&#39;])
-                print()
-                cls.cmd = cls.input_(f&#34;Press &#39;Enter&#39; to spoof &#39;{host[&#39;vendor&#39;]}&#39; again (b to go back):{safe_mode} &#34;)
+        cls.process_host_selection(safe_mode)
+    elif (cls.cmd in Settings.commands[&#39;specials&#39;]):
+        cls.process_special_cmd()
     elif (
         cls.cmd not in Settings.commands[&#39;quit&#39;]
         and cls.cmd != &#39;&#39;
@@ -636,31 +804,75 @@ def process_settings_menu(cls):
     print(f&#34;{&#39;n&#39;:&gt;3}) Network scan for local hosts&#34;)
     print(f&#34;{&#39;r&#39;:&gt;3}) Reset settings configuration&#34;)
     print(f&#34;{&#39;s&#39;:&gt;3}) Toggle &#39;SAFE_MODE&#39; for spoofing (Current: {Settings.get[&#39;SAFE_MODE&#39;]})&#34;)
+    print(f&#34;{&#39;t&#39;:&gt;3}) Set &#39;TIMEOUT&#39; for ARP requests (Current: {Settings.get[&#39;TIMEOUT&#39;]})&#34;)
     print(f&#34;{&#39;w&#39;:&gt;3}) Set &#39;WAIT_DURATION&#39; to enable auto-revive (Current: {Settings.get[&#39;WAIT_DURATION&#39;]})&#34;)
     print()
 
     # Process commands
-    cls.cmd = cls.input_(&#34;Select setting to configure (b to go back): &#34;)
+    cls.cmd = input_(&#34;Select setting to configure (b to go back): &#34;)
     if (cls.cmd == &#39;n&#39;):
         Network.initialize()
     elif (cls.cmd == &#39;r&#39;):
         Settings.reset_settings()
     elif (cls.cmd == &#39;s&#39;):
         Settings.toggle_safe_mode()
+    elif (cls.cmd == &#39;t&#39;):
+        cls.process_duration_input(Settings.set_timeout, &#39;TIMEOUT&#39;)
     elif (cls.cmd == &#39;w&#39;):
-        cls.cmd = cls.input_(&#34;Enter duration (in seconds): &#34;)
-        if (cls.cmd.replace(&#39;.&#39;, &#39;&#39;).isdecimal()):
-            Settings.set_wait_duration(float(cls.cmd))
-        else:
-            print(f&#34;{&#39;&#39;:2}(e22) Invalid duration for &#39;WAIT_DURATION&#39;!&#34;)
-    elif (cls.cmd == &#39;!debug&#39;):
-        Settings.toggle_debug_mode()
+        cls.process_duration_input(Settings.set_wait_duration, &#39;WAIT_DURATION&#39;)
+    elif (cls.cmd in Settings.commands[&#39;specials&#39;]):
+        cls.process_special_cmd()
     elif (
         cls.cmd not in Settings.commands[&#39;back&#39;]
         and cls.cmd not in Settings.commands[&#39;quit&#39;]
         and cls.cmd != &#39;&#39;
     ):
-        print(f&#34;{&#39;&#39;:2}(e22) Invalid setting selection!&#34;)</code></pre>
+        print(f&#34;{&#39;&#39;:2}(e22) Invalid setting selection!&#34;)
+
+    # Return if empty, quit, back, or network scan command
+    if (
+        cls.cmd in Settings.commands[&#39;back&#39;]
+        or cls.cmd in Settings.commands[&#39;quit&#39;]
+        or cls.cmd == &#39;&#39;
+        or cls.cmd == &#39;n&#39;
+        or cls.cmd == &#39;!!scan&#39;
+    ):
+        return
+
+    # Stay in settings menu
+    cls.process_settings_menu()</code></pre>
+</details>
+</dd>
+<dt id="spoofy.ui.CLI.process_special_cmd"><code class="name flex">
+<span>def <span class="ident">process_special_cmd</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Process user input for special commands.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def process_special_cmd(cls):
+    &#34;&#34;&#34;
+    Process user input for special commands.
+    &#34;&#34;&#34;
+    if (cls.cmd == &#39;!debug&#39;):
+        Settings.toggle_debug_mode()
+    elif (cls.cmd == &#39;!!delay&#39;):
+        cls.process_duration_input(Settings.set_delay, &#39;DELAY&#39;)
+    elif (cls.cmd == &#39;!!reset&#39;):
+        Settings.reset_settings()
+    elif (cls.cmd == &#39;!safe-mode&#39;):
+        Settings.toggle_safe_mode()
+    elif (cls.cmd == &#39;!!scan&#39;):
+        Network.initialize()
+    elif (cls.cmd == &#39;!!settings&#39;):
+        Settings.print_debug(debug=True)
+    elif (cls.cmd == &#39;!!timeout&#39;):
+        cls.process_duration_input(Settings.set_timeout, &#39;TIMEOUT&#39;)
+    elif (cls.cmd == &#39;!!wait&#39;):
+        cls.process_duration_input(Settings.set_wait_duration, &#39;WAIT_DURATION&#39;)</code></pre>
 </details>
 </dd>
 <dt id="spoofy.ui.CLI.run"><code class="name flex">
@@ -677,22 +889,37 @@ def run(cls):
     &#34;&#34;&#34;
     Main method to run this component.
     &#34;&#34;&#34;
-    print()
-    print(&#34;Welcome to &#39;Spoofy&#39;!&#34;)
-    Settings.initialize()
-    Network.initialize()
+    try:
+        # Initialize signal handling
+        Signal.handlers()
 
-    while (cls.cmd not in Settings.commands[&#39;quit&#39;]):
-        cls.process_main_menu()
-    Network.cleanup()
-    print()</code></pre>
+        # Check requirements to run
+        check_requirements()
+
+        print()
+        print(&#34;Welcome to &#39;Spoofy&#39;!&#34;)
+        print(&#34;A cross-platform CLI Python package for ARP spoofing!&#34;)
+        print()
+
+        Settings.initialize()
+        Network.initialize()
+        while (cls.cmd not in Settings.commands[&#39;quit&#39;]):
+            cls.process_main_menu()
+    except EOFError:
+        cls.terminate()
+    except:
+        cls.terminate()
+        trace_exception()
+    else:
+        Network.cleanup()
+        print()</code></pre>
 </details>
 </dd>
 <dt id="spoofy.ui.CLI.terminate"><code class="name flex">
 <span>def <span class="ident">terminate</span></span>(<span>space=True)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Invoke in case of interruption to properly terminate.</p>
+<div class="desc"><p>Invoke Signal.terminate() if interrupted.</p>
 <h2 id="parameter">Parameter</h2>
 <p>space &ndash; (bool/True) pad 2 extra newlines before the message</p></div>
 <details class="source">
@@ -702,18 +929,12 @@ def run(cls):
 <pre><code class="python">@classmethod
 def terminate(cls, space=True):
     &#34;&#34;&#34;
-    Invoke in case of interruption to properly terminate.
+    Invoke Signal.terminate() if interrupted.
 
     Parameter:
         space -- (bool/True) pad 2 extra newlines before the message
     &#34;&#34;&#34;
-    if (Network.get_killed() &gt; 0):
-        if (space):
-            print()
-            print()
-        print(&#34;Initiate cleanup process... DO NOT interrupt!&#34;)
-    Network.cleanup()
-    print()</code></pre>
+    Signal.terminate(space=space)</code></pre>
 </details>
 </dd>
 </dl>
@@ -738,11 +959,13 @@ def terminate(cls, space=True):
 <h4><code><a title="spoofy.ui.CLI" href="#spoofy.ui.CLI">CLI</a></code></h4>
 <ul class="">
 <li><code><a title="spoofy.ui.CLI.cmd" href="#spoofy.ui.CLI.cmd">cmd</a></code></li>
-<li><code><a title="spoofy.ui.CLI.input_" href="#spoofy.ui.CLI.input_">input_</a></code></li>
+<li><code><a title="spoofy.ui.CLI.process_duration_input" href="#spoofy.ui.CLI.process_duration_input">process_duration_input</a></code></li>
+<li><code><a title="spoofy.ui.CLI.process_host_selection" href="#spoofy.ui.CLI.process_host_selection">process_host_selection</a></code></li>
 <li><code><a title="spoofy.ui.CLI.process_info_menu" href="#spoofy.ui.CLI.process_info_menu">process_info_menu</a></code></li>
 <li><code><a title="spoofy.ui.CLI.process_license_menu" href="#spoofy.ui.CLI.process_license_menu">process_license_menu</a></code></li>
 <li><code><a title="spoofy.ui.CLI.process_main_menu" href="#spoofy.ui.CLI.process_main_menu">process_main_menu</a></code></li>
 <li><code><a title="spoofy.ui.CLI.process_settings_menu" href="#spoofy.ui.CLI.process_settings_menu">process_settings_menu</a></code></li>
+<li><code><a title="spoofy.ui.CLI.process_special_cmd" href="#spoofy.ui.CLI.process_special_cmd">process_special_cmd</a></code></li>
 <li><code><a title="spoofy.ui.CLI.run" href="#spoofy.ui.CLI.run">run</a></code></li>
 <li><code><a title="spoofy.ui.CLI.terminate" href="#spoofy.ui.CLI.terminate">terminate</a></code></li>
 </ul>
